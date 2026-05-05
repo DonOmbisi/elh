@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/elh_bench.dir/link.d CMakeFiles/elh_bench.dir/bench/bench.c.o -o elh_bench  libelh.a
