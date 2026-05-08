@@ -88,8 +88,12 @@ gcc -O2 -Iinclude src/elh.c your_program.c -o your_program
 
 ## Known Issues
 
-- ELH k=1 performs slightly worse than LZ4 on short-repeat data (xml: 28.49% vs 25.92%)
-  due to stale entries in the sliding window. Tunable window size is planned.
+- ELH k=1 performs slightly worse than LZ4 on xml (28.49% vs 25.92%) due to
+  different hash resolution. ELH allocates 4 slots per bucket regardless of k,
+  giving fewer buckets at k=1 than LZ4's direct-mapped table. Use k=2 or k=4
+  for better results — ELH k=4 beats LZ4 on xml (20.23% vs 25.92%).
+- A tunable window_size parameter is available in elh_params_t for workloads
+  where limiting match distance improves performance.
 - Compression speed is 35-65% slower than LZ4 baseline due to larger hash table
   (128KB vs 64KB). SIMD bucket scan optimisation is planned.
 

@@ -6,7 +6,17 @@ set(CMAKE_C_STANDARD 11)
 # Library
 add_library(elh src/elh.c)
 target_include_directories(elh PUBLIC include)
-target_compile_options(elh PRIVATE -O2 -Wall -Wextra)
+# Enable AVX2 if available, fall back to scalar
+include(CheckCCompilerFlag)
+check_c_compiler_flag(-mavx2 HAVE_AVX2)
+if(HAVE_AVX2)
+    target_compile_options(elh PRIVATE -O2 -Wall -Wextra -mavx2)
+    target_compile_definitions(elh PUBLIC ELH_HAVE_AVX2)
+    message(STATUS "ELH: AVX2 enabled")
+else()
+    target_compile_options(elh PRIVATE -O2 -Wall -Wextra)
+    message(STATUS "ELH: AVX2 not available, using scalar path")
+endif()
 
 # Benchmark tool
 add_executable(elh_bench bench/bench.c)

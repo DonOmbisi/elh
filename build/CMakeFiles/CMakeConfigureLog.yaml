@@ -283,3 +283,40 @@ events:
       Running the C compiler's linker: "/usr/bin/ld" "-v"
       GNU ld (GNU Binutils for Debian) 2.45
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.31/Modules/Internal/CheckSourceCompiles.cmake:108 (try_compile)"
+      - "/usr/share/cmake-3.31/Modules/Internal/CheckCompilerFlag.cmake:18 (cmake_check_source_compiles)"
+      - "/usr/share/cmake-3.31/Modules/CheckCCompilerFlag.cmake:56 (cmake_check_compiler_flag)"
+      - "CMakeLists.txt:11 (check_c_compiler_flag)"
+    checks:
+      - "Performing Test HAVE_AVX2"
+    directories:
+      source: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/CMakeScratch/TryCompile-apl4CI"
+      binary: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/CMakeScratch/TryCompile-apl4CI"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "HAVE_AVX2"
+      cached: true
+      stdout: |
+        Change Dir: '/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/CMakeScratch/TryCompile-apl4CI'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_2c085/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_2c085.dir/build.make CMakeFiles/cmTC_2c085.dir/build
+        gmake[1]: Entering directory '/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/CMakeScratch/TryCompile-apl4CI'
+        Building C object CMakeFiles/cmTC_2c085.dir/src.c.o
+        /usr/bin/cc -DHAVE_AVX2  -std=gnu11   -mavx2 -o CMakeFiles/cmTC_2c085.dir/src.c.o -c /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/CMakeScratch/TryCompile-apl4CI/src.c
+        Linking C executable cmTC_2c085
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2c085.dir/link.txt --verbose=1
+        /usr/bin/cc CMakeFiles/cmTC_2c085.dir/src.c.o -o cmTC_2c085
+        gmake[1]: Leaving directory '/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/CMakeScratch/TryCompile-apl4CI'
+        
+      exitCode: 0
+...

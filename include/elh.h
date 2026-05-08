@@ -17,11 +17,13 @@ typedef struct {
     int bucket_k;      /* hash bucket depth: 1, 2, 4, 8 (default 4) */
     int use_overflow;  /* enable A2 overflow table (default 1) */
     int acceleration;  /* speed bias 1-9, higher=faster/worse (default 1) */
+    int window_size;   /* max match distance 1-65535, 0=max (default 0) */
 } elh_params_t;
 
-#define ELH_PARAMS_DEFAULT { 4, 1, 1 }
-#define ELH_PARAMS_FAST    { 2, 0, 1 }
-#define ELH_PARAMS_MAX     { 4, 1, 1 }
+#define ELH_PARAMS_DEFAULT  { 4, 1, 1, 0 }
+#define ELH_PARAMS_FAST     { 2, 0, 1, 0 }
+#define ELH_PARAMS_MAX      { 4, 1, 1, 0 }
+#define ELH_PARAMS_SHORT    { 4, 1, 1, 16384 } /* for xml/json/markup */
 
 /* Returns max compressed size for srcSize input */
 int elh_compress_bound(int srcSize);

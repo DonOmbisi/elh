@@ -12,6 +12,9 @@
 #include "elh.h"
 #include <string.h>
 #include <stdlib.h>
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
 
 typedef uint8_t  U8;
 typedef uint16_t U16;
@@ -64,26 +67,81 @@ static inline void elh_put(elh_htable_t* ht, U32 seq, U32 pos, int k) {
 static inline U32 elh_get(const elh_htable_t* ht, U32 seq,
                            const U8* base, const U8* ip,
                            const U8* mlimit, U32 curPos,
-                           int k, int ovf)
+                           int k, int ovf, U32 window)
 {
     U32 h1   = elh_hash_a1(seq);
     U32 b    = h1 * ELH_BUCKET_MAX;
     U32 best = 0, blen = 0;
-    int i;
-    for (i = 0; i < k; i++) {
-        U32 pos = ht->a1[b+i];
-        if (!pos) continue;
-        if (curPos - pos > ELH_DISTANCE_MAX) continue;
-        const U8* m = base + pos;
-        if (elh_read32(m) != elh_read32(ip)) continue;
-        const U8* a = ip+4, *c = m+4;
-        while (a < mlimit && *a == *c) { a++; c++; }
-        U32 len = (U32)(a - ip);
-        if (len > blen) { blen = len; best = pos; }
+
+#ifdef __AVX2__
+    /* SIMD path: load all 4 candidates, check distances in parallel */
+    if (k == ELH_BUCKET_MAX) {
+        /* Load 4 candidate positions as 128-bit vector */
+        __m128i cands  = _mm_loadu_si128((const __m128i*)(ht->a1 + b));
+        __m128i vcur   = _mm_set1_epi32((int)curPos);
+        __m128i vmax   = _mm_set1_epi32((int)ELH_DISTANCE_MAX);
+        __m128i vzero  = _mm_setzero_si128();
+
+        /* Compute distances: curPos - pos for each candidate */
+        __m128i dists  = _mm_sub_epi32(vcur, cands);
+
+        /* Valid mask: pos != 0 AND dist <= DISTANCE_MAX */
+        __m128i nonzero = _mm_cmpgt_epi32(cands, vzero);
+        __m128i inrange = _mm_cmpgt_epi32(vmax, _mm_sub_epi32(dists,
+                          _mm_set1_epi32(1)));  /* dist-1 < max → dist <= max */
+        __m128i valid   = _mm_and_si128(nonzero, inrange);
+
+        /* Apply window mask if set */
+        if (window) {
+            __m128i vwin  = _mm_set1_epi32((int)window);
+            __m128i winok = _mm_cmpgt_epi32(vwin, _mm_sub_epi32(dists,
+                            _mm_set1_epi32(1)));
+            valid = _mm_and_si128(valid, winok);
+        }
+
+        int mask = _mm_movemask_epi8(valid);  /* 4 bits set per valid lane */
+
+        /* Check each valid candidate */
+        U32 slots[4];
+        _mm_storeu_si128((__m128i*)slots, cands);
+
+        int i;
+        for (i = 0; i < 4; i++) {
+            if (!(mask & (0xF << (i*4)))) continue;
+            U32 pos = slots[i];
+            const U8* m = base + pos;
+            if (elh_read32(m) != elh_read32(ip)) continue;
+            const U8* a = ip+4, *c = m+4;
+            while (a < mlimit && *a == *c) { a++; c++; }
+            U32 len = (U32)(a - ip);
+            if (len > blen) { blen = len; best = pos; }
+        }
+    } else {
+#endif
+    /* Scalar path: used when k < ELH_BUCKET_MAX or no AVX2 */
+    {
+        int i;
+        for (i = 0; i < k; i++) {
+            U32 pos = ht->a1[b+i];
+            if (!pos) continue;
+            if (curPos - pos > ELH_DISTANCE_MAX) continue;
+            if (window && curPos - pos > window) continue;
+            const U8* m = base + pos;
+            if (elh_read32(m) != elh_read32(ip)) continue;
+            const U8* a = ip+4, *c = m+4;
+            while (a < mlimit && *a == *c) { a++; c++; }
+            U32 len = (U32)(a - ip);
+            if (len > blen) { blen = len; best = pos; }
+        }
     }
+#ifdef __AVX2__
+    }
+#endif
+
     if (!best && ovf) {
         U32 pos = ht->a2[elh_hash_a2(seq)];
         if (pos && curPos - pos <= ELH_DISTANCE_MAX &&
+            (!window || curPos - pos <= window) &&
             elh_read32(base+pos) == elh_read32(ip)) best = pos;
     }
     return best;
@@ -101,10 +159,12 @@ int elh_compress(const void* src, int srcSize,
     if (srcSize <= 0 || !src || !dst) return -1;
     if (dstCapacity < elh_compress_bound(srcSize)) return -1;
 
-    int k   = params.bucket_k < 1 ? 1 :
-              params.bucket_k > ELH_BUCKET_MAX ? ELH_BUCKET_MAX : params.bucket_k;
-    int ovf = params.use_overflow;
-    int acc = params.acceleration < 1 ? 1 : params.acceleration;
+    int k      = params.bucket_k < 1 ? 1 :
+               params.bucket_k > ELH_BUCKET_MAX ? ELH_BUCKET_MAX : params.bucket_k;
+    int ovf    = params.use_overflow;
+    int acc    = params.acceleration < 1 ? 1 : params.acceleration;
+    U32 window = (params.window_size <= 0 || params.window_size > ELH_DISTANCE_MAX)
+                 ? 0 : (U32)params.window_size;
 
     const U8* ip      = (const U8*)src;
     const U8* iend    = ip + srcSize;
@@ -131,7 +191,7 @@ int elh_compress(const void* src, int srcSize,
         while (search <= mflimit) {
             U32 seq = elh_read32(search);
             U32 cur = (U32)(search - base);
-            U32 pos = elh_get(ht, seq, base, search, mlimit, cur, k, ovf);
+            U32 pos = elh_get(ht, seq, base, search, mlimit, cur, k, ovf, window);
             elh_put(ht, seq, cur, k);
             if (pos) {
                 /* pos is valid — distance check already done in elh_get */
