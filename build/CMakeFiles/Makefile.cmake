@@ -56,4 +56,5 @@ set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/elh.dir/DependInfo.cmake"
   "CMakeFiles/elh_bench.dir/DependInfo.cmake"
   "CMakeFiles/elh_test.dir/DependInfo.cmake"
+  "CMakeFiles/elh_stream_test.dir/DependInfo.cmake"
   )

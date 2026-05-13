@@ -210,6 +210,19 @@ elh_test/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_test.dir/build.make CMakeFiles/elh_test.dir/build
 .PHONY : elh_test/fast
 
+#=============================================================================
+# Target rules for targets named elh_stream_test
+
+# Build rule for target.
+elh_stream_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 elh_stream_test
+.PHONY : elh_stream_test
+
+# fast build rule for target.
+elh_stream_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_stream_test.dir/build.make CMakeFiles/elh_stream_test.dir/build
+.PHONY : elh_stream_test/fast
+
 bench/bench.o: bench/bench.c.o
 .PHONY : bench/bench.o
 
@@ -282,6 +295,30 @@ tests/test_correctness.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_test.dir/build.make CMakeFiles/elh_test.dir/tests/test_correctness.c.s
 .PHONY : tests/test_correctness.c.s
 
+tests/test_streaming.o: tests/test_streaming.c.o
+.PHONY : tests/test_streaming.o
+
+# target to build an object file
+tests/test_streaming.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_stream_test.dir/build.make CMakeFiles/elh_stream_test.dir/tests/test_streaming.c.o
+.PHONY : tests/test_streaming.c.o
+
+tests/test_streaming.i: tests/test_streaming.c.i
+.PHONY : tests/test_streaming.i
+
+# target to preprocess a source file
+tests/test_streaming.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_stream_test.dir/build.make CMakeFiles/elh_stream_test.dir/tests/test_streaming.c.i
+.PHONY : tests/test_streaming.c.i
+
+tests/test_streaming.s: tests/test_streaming.c.s
+.PHONY : tests/test_streaming.s
+
+# target to generate assembly for a file
+tests/test_streaming.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_stream_test.dir/build.make CMakeFiles/elh_stream_test.dir/tests/test_streaming.c.s
+.PHONY : tests/test_streaming.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -297,6 +334,7 @@ help:
 	@echo "... test"
 	@echo "... elh"
 	@echo "... elh_bench"
+	@echo "... elh_stream_test"
 	@echo "... elh_test"
 	@echo "... bench/bench.o"
 	@echo "... bench/bench.i"
@@ -307,6 +345,9 @@ help:
 	@echo "... tests/test_correctness.o"
 	@echo "... tests/test_correctness.i"
 	@echo "... tests/test_correctness.s"
+	@echo "... tests/test_streaming.o"
+	@echo "... tests/test_streaming.i"
+	@echo "... tests/test_streaming.s"
 .PHONY : help
 
 

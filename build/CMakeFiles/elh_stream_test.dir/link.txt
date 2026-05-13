@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/elh_stream_test.dir/link.d CMakeFiles/elh_stream_test.dir/tests/test_streaming.c.o -o elh_stream_test  libelh.a

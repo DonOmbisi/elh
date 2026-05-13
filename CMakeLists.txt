@@ -32,3 +32,8 @@ add_executable(elh_test tests/test_correctness.c)
 target_link_libraries(elh_test elh)
 enable_testing()
 add_test(NAME correctness COMMAND elh_test)
+
+# Streaming tests
+add_executable(elh_stream_test tests/test_streaming.c)
+target_link_libraries(elh_stream_test elh)
+add_test(NAME streaming COMMAND elh_stream_test)

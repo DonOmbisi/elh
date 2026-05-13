@@ -51,7 +51,7 @@ typedef struct {
     U32 a2[ELH_A2_BUCKETS]; /* 65536 bytes */
 } elh_htable_t;             /* 131072 bytes total */
 
-static inline void elh_put(elh_htable_t* ht, U32 seq, U32 pos, int k) {
+static inline int elh_put(elh_htable_t* ht, U32 seq, U32 pos, int k) {
     U32 h1 = elh_hash_a1(seq);
     U32 b  = h1 * ELH_BUCKET_MAX;
     U32 evicted = ht->a1[b + k - 1];
@@ -61,7 +61,9 @@ static inline void elh_put(elh_htable_t* ht, U32 seq, U32 pos, int k) {
     ht->a1[b] = pos;
     if (evicted != 0) {
         ht->a2[elh_hash_a2(seq)] = evicted;
+        return 1;  /* eviction occurred — bucket was full */
     }
+    return 0;  /* no eviction — bucket had free slot */
 }
 
 static inline U32 elh_get(const elh_htable_t* ht, U32 seq,
@@ -147,6 +149,16 @@ static inline U32 elh_get(const elh_htable_t* ht, U32 seq,
     return best;
 }
 
+/* Adaptive k constants */
+#define ELH_ADAPT_WINDOW    1024   /* measure eviction rate every N inserts */
+#define ELH_ADAPT_UP        768    /* 75% eviction rate -> increase k */
+#define ELH_ADAPT_DOWN      256    /* 25% eviction rate -> decrease k */
+
+/* Adaptive k constants */
+#define ELH_ADAPT_WINDOW    1024   /* measure eviction rate every N inserts */
+#define ELH_ADAPT_UP        768    /* 75% eviction rate -> increase k */
+#define ELH_ADAPT_DOWN      256    /* 25% eviction rate -> decrease k */
+
 int elh_compress_bound(int n) {
     /* 8 bytes per 64KB block header + LZ4 overhead */
     return n + (n / 255) + (n / 65536 + 1) * 8 + 32;
@@ -159,12 +171,18 @@ int elh_compress(const void* src, int srcSize,
     if (srcSize <= 0 || !src || !dst) return -1;
     if (dstCapacity < elh_compress_bound(srcSize)) return -1;
 
-    int k      = params.bucket_k < 1 ? 1 :
+    int k_init = params.bucket_k < 1 ? 1 :
                params.bucket_k > ELH_BUCKET_MAX ? ELH_BUCKET_MAX : params.bucket_k;
     int ovf    = params.use_overflow;
     int acc    = params.acceleration < 1 ? 1 : params.acceleration;
     U32 window = (params.window_size <= 0 || params.window_size > ELH_DISTANCE_MAX)
                  ? 0 : (U32)params.window_size;
+
+    /* Adaptive k state — elastic hashing batch protocol */
+    int k           = k_init;          /* current probe depth */
+    int adapt_count = 0;               /* inserts since last adaptation */
+    int evict_count = 0;               /* evictions in current window */
+    const int do_adapt = (params.bucket_k == 0); /* 0 = fully adaptive mode */
 
     const U8* ip      = (const U8*)src;
     const U8* iend    = ip + srcSize;
@@ -192,7 +210,25 @@ int elh_compress(const void* src, int srcSize,
             U32 seq = elh_read32(search);
             U32 cur = (U32)(search - base);
             U32 pos = elh_get(ht, seq, base, search, mlimit, cur, k, ovf, window);
-            elh_put(ht, seq, cur, k);
+            evict_count += elh_put(ht, seq, cur, k);
+            if (do_adapt && ++adapt_count >= ELH_ADAPT_WINDOW) {
+                /* Elastic hashing batch adaptation:
+                 * High eviction rate = table dense = increase k for better history
+                 * Low eviction rate  = table sparse = decrease k to save time
+                 * No evictions at all = incompressible data = stop adapting */
+                if (evict_count == 0) {
+                    /* Table never fills — incompressible data.
+                     * Lock k=1 and disable further adaptation. */
+                    k = 1;
+                } else {
+                    if (evict_count > ELH_ADAPT_UP && k < ELH_BUCKET_MAX)
+                        k++;
+                    else if (evict_count < ELH_ADAPT_DOWN && k > 1)
+                        k--;
+                }
+                adapt_count = 0;
+                evict_count = 0;
+            }
             if (pos) {
                 /* pos is valid — distance check already done in elh_get */
                 mptr = base + pos; ip = search; goto _found;
@@ -246,7 +282,7 @@ int elh_compress(const void* src, int srcSize,
             const U8* hp = ip - matchLen + 2;
             while (hp < ip - 1 && hp <= mflimit2) {
                 U32 pp = (U32)(hp - base);
-                elh_put(ht, elh_read32(hp), pp, k);
+                evict_count += elh_put(ht, elh_read32(hp), pp, k);
                 hp++;
             }
 
@@ -276,6 +312,271 @@ _last_lits:;
 }
 
 /* Decompressor — single contiguous stream, no block headers */
+/* ═══════════════════════════════════════════════════════════
+ * Streaming API implementation
+ * ═══════════════════════════════════════════════════════════ */
+
+struct elh_stream_s {
+    elh_htable_t* ht;       /* persistent hash table */
+    elh_params_t  params;   /* compression parameters */
+    U32           curPos;   /* absolute position counter */
+    /* Decompressor history: last 64KB of output for cross-chunk matches */
+    U8            history[65536];
+    U32           histPos;  /* write position in history ring buffer */
+    U32           histFill; /* bytes written so far (caps at 65536) */
+};
+
+elh_stream_t* elh_stream_new(elh_params_t params) {
+    elh_stream_t* s = (elh_stream_t*)calloc(1, sizeof(elh_stream_t));
+    if (!s) return NULL;
+    s->ht = (elh_htable_t*)calloc(1, sizeof(elh_htable_t));
+    if (!s->ht) { free(s); return NULL; }
+    s->params  = params;
+    s->curPos  = 0;
+    s->histPos = 0;
+    s->histFill = 0;
+    return s;
+}
+
+void elh_stream_free(elh_stream_t* s) {
+    if (!s) return;
+    free(s->ht);
+    free(s);
+}
+
+void elh_stream_reset(elh_stream_t* s) {
+    if (!s) return;
+    memset(s->ht, 0, sizeof(elh_htable_t));
+    s->curPos   = 0;
+    s->histPos  = 0;
+    s->histFill = 0;
+}
+
+int elh_stream_bound(int srcSize) {
+    return elh_compress_bound(srcSize);
+}
+
+int elh_stream_compress(elh_stream_t* s,
+                        const void* src, int srcSize,
+                        void* dst, int dstCapacity)
+{
+    if (!s || srcSize <= 0 || !src || !dst) return -1;
+    if (dstCapacity < elh_stream_bound(srcSize)) return -1;
+
+    int k      = s->params.bucket_k < 1 ? 1 :
+                 s->params.bucket_k > ELH_BUCKET_MAX ? ELH_BUCKET_MAX :
+                 s->params.bucket_k;
+    int ovf    = s->params.use_overflow;
+    int acc    = s->params.acceleration < 1 ? 1 : s->params.acceleration;
+    U32 window = (s->params.window_size <= 0 ||
+                  s->params.window_size > ELH_DISTANCE_MAX)
+                 ? 0 : (U32)s->params.window_size;
+
+    /* Adaptive k state */
+    int k_init      = k;
+    int adapt_count = 0;
+    int evict_count = 0;
+    const int do_adapt = (s->params.bucket_k == 0);
+    if (do_adapt) k = 1;
+
+    const U8* ip      = (const U8*)src;
+    const U8* iend    = ip + srcSize;
+    const U8* anchor  = ip;
+    const U8* mflimit = iend - ELH_MFLIMIT;
+    const U8* mlimit  = iend - ELH_LASTLITERALS;
+    U8* op   = (U8*)dst;
+    U8* oend = op + dstCapacity;
+
+    /* Virtual base: base + curPos = ip at start of this chunk
+     * So base = ip - curPos */
+    const U8* base = ip - s->curPos;
+
+    if (srcSize < ELH_MINMATCH + 1) goto _stream_last_lits;
+    ip++;
+    s->curPos++;
+
+    for (;;) {
+        const U8* search = ip;
+        const U8* mptr   = NULL;
+        int skips = 0;
+
+        while (search <= mflimit) {
+            U32 seq = elh_read32(search);
+            U32 cur = s->curPos + (U32)(search - ip);
+            U32 pos = elh_get(s->ht, seq, base, search, mlimit,
+                              cur, k, ovf, window);
+            elh_put(s->ht, seq, cur, k);
+            if (pos) {
+                U32 dist = cur - pos;
+                if (dist > 0 && dist <= ELH_DISTANCE_MAX) {
+                    mptr = base + pos; ip = search; goto _stream_found;
+                }
+            }
+            skips++;
+            search += 1 + (skips >> (acc + 2));
+        }
+        goto _stream_last_lits;
+
+    _stream_found:
+        while (ip > anchor && mptr > base && ip[-1] == mptr[-1]) {
+            ip--; mptr--;
+        }
+
+        {
+            U32 litLen = (U32)(ip - anchor);
+            U8* token  = op++;
+            if (op + litLen + (litLen/255) + 10 > oend) return -1;
+
+            if (litLen >= ELH_RUN_MASK) {
+                *token = (U8)(ELH_RUN_MASK << 4);
+                U32 r = litLen - ELH_RUN_MASK;
+                while (r >= 255) { *op++ = 255; r -= 255; }
+                *op++ = (U8)r;
+            } else {
+                *token = (U8)(litLen << 4);
+            }
+            memcpy(op, anchor, litLen);
+            op += litLen;
+
+            const U8* ma = ip+4, *mc = mptr+4;
+            while (ma < mlimit && *ma == *mc) { ma++; mc++; }
+            U32 matchLen = (U32)(ma - ip);
+            U32 mlCode   = matchLen - ELH_MINMATCH;
+            U32 curHere  = s->curPos + (U32)(ip - (const U8*)src);
+
+            elh_write16(op, (U16)(ip - mptr)); op += 2;
+
+            if (mlCode < ELH_ML_MASK) {
+                *token |= (U8)mlCode;
+            } else {
+                *token |= ELH_ML_MASK;
+                U32 r = mlCode - ELH_ML_MASK;
+                if (op + (r/255) + 2 > oend) return -1;
+                while (r >= 255) { *op++ = 255; r -= 255; }
+                *op++ = (U8)r;
+            }
+
+            ip += matchLen;
+            anchor = ip;
+
+            const U8* hp = ip - matchLen + 2;
+            while (hp < ip - 1 && hp <= mflimit) {
+                U32 pp = curHere + (U32)(hp - (ip - matchLen));
+                elh_put(s->ht, elh_read32(hp), pp, k);
+                hp++;
+            }
+
+            /* Adaptive k */
+            if (do_adapt) {
+                evict_count++;
+                if (++adapt_count >= ELH_ADAPT_WINDOW) {
+                    if (evict_count == 0) { k = 1; }
+                    else if (evict_count > ELH_ADAPT_UP && k < ELH_BUCKET_MAX) k++;
+                    else if (evict_count < ELH_ADAPT_DOWN && k > 1) k--;
+                    adapt_count = 0; evict_count = 0;
+                }
+            }
+
+            if (ip > mflimit) goto _stream_last_lits;
+        }
+    }
+
+_stream_last_lits:;
+    {
+        U32 litLen = (U32)(iend - anchor);
+        if (op + litLen + (litLen/255) + 2 > oend) return -1;
+        U8* token = op++;
+        if (litLen >= ELH_RUN_MASK) {
+            *token = (U8)(ELH_RUN_MASK << 4);
+            U32 r = litLen - ELH_RUN_MASK;
+            while (r >= 255) { *op++ = 255; r -= 255; }
+            *op++ = (U8)r;
+        } else {
+            *token = (U8)(litLen << 4);
+        }
+        memcpy(op, anchor, litLen);
+        op += litLen;
+    }
+
+    /* Advance position counter by chunk size */
+    s->curPos += (U32)srcSize;
+
+    return (int)(op - (U8*)dst);
+}
+int elh_stream_decompress(elh_stream_t* s,
+                          const void* src, int srcSize,
+                          void* dst, int dstCapacity)
+{
+    if (!s || !src || !dst) return -1;
+
+    const U8* ip   = (const U8*)src;
+    const U8* iend = ip + srcSize;
+    U8* op   = (U8*)dst;
+    U8* op0  = op;
+    U8* oend = op + dstCapacity;
+
+    while (ip < iend) {
+        U8  token  = *ip++;
+        U32 litLen = token >> 4;
+        if (litLen == ELH_RUN_MASK) {
+            U8 sv; do { sv = *ip++; litLen += sv; } while (sv == 255 && ip < iend);
+        }
+        if (op + litLen > oend || ip + litLen > iend) return -1;
+        memcpy(op, ip, litLen); op += litLen; ip += litLen;
+        if (ip >= iend) break;
+        if (ip + 2 > iend) return -1;
+        U16 offset; memcpy(&offset, ip, 2); ip += 2;
+        if (!offset) return -1;
+
+        U32 matchLen = (token & ELH_ML_MASK) + ELH_MINMATCH;
+        if ((token & ELH_ML_MASK) == ELH_ML_MASK) {
+            U8 sv; do { sv = *ip++; matchLen += sv; } while (sv == 255 && ip < iend);
+        }
+        if (op + matchLen > oend) return -1;
+
+        U32 cur_out = (U32)(op - op0);
+        if (offset <= cur_out) {
+            /* Match entirely within current chunk */
+            const U8* match = op - offset;
+            U32 i; for (i = 0; i < matchLen; i++) op[i] = match[i];
+        } else {
+            /* Match spans into history from previous chunks */
+            U32 back_in_history = offset - cur_out;
+            if (back_in_history > s->histFill) return -1;
+            U32 hist_idx = s->histFill - back_in_history;
+            U32 i;
+            for (i = 0; i < matchLen; i++) {
+                U32 idx = hist_idx + i;
+                if (idx < s->histFill) {
+                    op[i] = s->history[idx];
+                } else {
+                    /* Crossed into current chunk output */
+                    op[i] = op0[idx - s->histFill];
+                }
+            }
+        }
+        op += matchLen;
+    }
+
+    /* Update history: keep last 65536 bytes of all output so far */
+    U32 outLen = (U32)(op - op0);
+    if (s->histFill + outLen <= 65536) {
+        memcpy(s->history + s->histFill, op0, outLen);
+        s->histFill += outLen;
+    } else if (outLen >= 65536) {
+        memcpy(s->history, op0 + outLen - 65536, 65536);
+        s->histFill = 65536;
+    } else {
+        U32 keep = 65536 - outLen;
+        memmove(s->history, s->history + (s->histFill - keep), keep);
+        memcpy(s->history + keep, op0, outLen);
+        s->histFill = 65536;
+    }
+
+    return (int)(op - op0);
+}
+
+/* ── Block decompressor ─────────────────────────────────── */
 int elh_decompress(const void* src, int srcSize,
                    void* dst, int dstCapacity)
 {
@@ -289,7 +590,7 @@ int elh_decompress(const void* src, int srcSize,
         U8  token  = *ip++;
         U32 litLen = token >> 4;
         if (litLen == ELH_RUN_MASK) {
-            U8 s; do { s = *ip++; litLen += s; } while (s == 255 && ip < iend);
+            U8 sv; do { sv = *ip++; litLen += sv; } while (sv == 255 && ip < iend);
         }
         if (op + litLen > oend || ip + litLen > iend) return -1;
         memcpy(op, ip, litLen); op += litLen; ip += litLen;
@@ -301,7 +602,7 @@ int elh_decompress(const void* src, int srcSize,
         if (match < op0) return -1;
         U32 matchLen = (token & ELH_ML_MASK) + ELH_MINMATCH;
         if ((token & ELH_ML_MASK) == ELH_ML_MASK) {
-            U8 s; do { s = *ip++; matchLen += s; } while (s == 255 && ip < iend);
+            U8 sv; do { sv = *ip++; matchLen += sv; } while (sv == 255 && ip < iend);
         }
         if (op + matchLen > oend) return -1;
         U32 i; for (i = 0; i < matchLen; i++) op[i] = match[i];
