@@ -317,13 +317,16 @@ _last_lits:;
  * ═══════════════════════════════════════════════════════════ */
 
 struct elh_stream_s {
-    elh_htable_t* ht;       /* persistent hash table */
-    elh_params_t  params;   /* compression parameters */
-    U32           curPos;   /* absolute position counter */
+    elh_htable_t* ht;          /* persistent hash table */
+    elh_params_t  params;      /* compression parameters */
+    U32           curPos;      /* absolute position counter */
+    /* Compressor: ring buffer of last 65536 input bytes for cross-chunk matches */
+    U8            window_buf[65536];
+    U32           wfill;       /* bytes filled so far (caps at 65536) */
     /* Decompressor history: last 64KB of output for cross-chunk matches */
     U8            history[65536];
-    U32           histPos;  /* write position in history ring buffer */
-    U32           histFill; /* bytes written so far (caps at 65536) */
+    U32           histPos;     /* write position in history ring buffer */
+    U32           histFill;    /* bytes written so far (caps at 65536) */
 };
 
 elh_stream_t* elh_stream_new(elh_params_t params) {
@@ -363,68 +366,122 @@ int elh_stream_compress(elh_stream_t* s,
     if (!s || srcSize <= 0 || !src || !dst) return -1;
     if (dstCapacity < elh_stream_bound(srcSize)) return -1;
 
-    int k      = s->params.bucket_k < 1 ? 1 :
-                 s->params.bucket_k > ELH_BUCKET_MAX ? ELH_BUCKET_MAX :
-                 s->params.bucket_k;
-    int ovf    = s->params.use_overflow;
-    int acc    = s->params.acceleration < 1 ? 1 : s->params.acceleration;
-    U32 window = (s->params.window_size <= 0 ||
-                  s->params.window_size > ELH_DISTANCE_MAX)
-                 ? 0 : (U32)s->params.window_size;
-
-    /* Adaptive k state */
-    int k_init      = k;
-    int adapt_count = 0;
-    int evict_count = 0;
+    int k   = s->params.bucket_k < 1 ? 1 :
+              s->params.bucket_k > ELH_BUCKET_MAX ? ELH_BUCKET_MAX :
+              s->params.bucket_k;
+    int ovf = s->params.use_overflow;
+    int acc = s->params.acceleration < 1 ? 1 : s->params.acceleration;
+    U32 wlim = (s->params.window_size <= 0 ||
+                s->params.window_size > ELH_DISTANCE_MAX)
+               ? 0 : (U32)s->params.window_size;
     const int do_adapt = (s->params.bucket_k == 0);
     if (do_adapt) k = 1;
+    int adapt_count = 0, evict_count = 0;
 
-    const U8* ip      = (const U8*)src;
-    const U8* iend    = ip + srcSize;
-    const U8* anchor  = ip;
+    const U8* src8  = (const U8*)src;
+    U8*  op   = (U8*)dst;
+    U8*  oend = op + dstCapacity;
+    U32  cstart = s->curPos;  /* stream position of src8[0] */
+
+    /* Copy chunk into ring buffer so previous-chunk matches remain accessible */
+    for (int i = 0; i < srcSize; i++)
+        s->window_buf[(cstart + i) & 65535] = src8[i];
+    s->wfill = (cstart + srcSize) < 65536 ? (cstart + srcSize) : 65536;
+
+#define WB(P)     (s->window_buf[(P) & 65535])
+#define WR32(P)   ((U32)WB(P)|((U32)WB((P)+1)<<8)|((U32)WB((P)+2)<<16)|((U32)WB((P)+3)<<24))
+#define SPOS(ptr) (cstart + (U32)((ptr) - src8))
+
+    const U8* anchor  = src8;
+    const U8* ip      = src8;
+    const U8* iend    = src8 + srcSize;
     const U8* mflimit = iend - ELH_MFLIMIT;
     const U8* mlimit  = iend - ELH_LASTLITERALS;
-    U8* op   = (U8*)dst;
-    U8* oend = op + dstCapacity;
 
-    /* Virtual base: base + curPos = ip at start of this chunk
-     * So base = ip - curPos */
-    const U8* base = ip - s->curPos;
-
-    if (srcSize < ELH_MINMATCH + 1) goto _stream_last_lits;
+    if (srcSize < ELH_MINMATCH + 1) goto _last;
     ip++;
-    s->curPos++;
 
     for (;;) {
         const U8* search = ip;
-        const U8* mptr   = NULL;
+        U32 match_spos = 0;
+        U32 match_len  = 0;
         int skips = 0;
 
+        /* Search for a match */
         while (search <= mflimit) {
             U32 seq = elh_read32(search);
-            U32 cur = s->curPos + (U32)(search - ip);
-            U32 pos = elh_get(s->ht, seq, base, search, mlimit,
-                              cur, k, ovf, window);
-            elh_put(s->ht, seq, cur, k);
-            if (pos) {
-                U32 dist = cur - pos;
-                if (dist > 0 && dist <= ELH_DISTANCE_MAX) {
-                    mptr = base + pos; ip = search; goto _stream_found;
+            U32 cur = SPOS(search);
+            U32 h1  = elh_hash_a1(seq);
+            U32 b   = h1 * ELH_BUCKET_MAX;
+            U32 bestlen = 0, bestpos = 0;
+            int j;
+
+            for (j = 0; j < k; j++) {
+                U32 p = s->ht->a1[b+j];
+                if (!p || cur - p > ELH_DISTANCE_MAX) continue;
+                if (wlim && cur - p > wlim) continue;
+                if (WR32(p) != seq) continue;
+                U32 ml = ELH_MINMATCH;
+                while (search+ml < mlimit && ml < 65530 &&
+                       src8[(search-src8)+ml] == WB(p+ml)) ml++;
+                if (ml > bestlen) { bestlen = ml; bestpos = p; }
+            }
+            if (!bestpos && ovf) {
+                U32 p = s->ht->a2[elh_hash_a2(seq)];
+                if (p && cur-p <= ELH_DISTANCE_MAX &&
+                    (!wlim || cur-p <= wlim) && WR32(p) == seq) {
+                    bestpos = p; bestlen = ELH_MINMATCH;
                 }
             }
+
+            /* Insert */
+            {
+                U32 ev = s->ht->a1[b+k-1];
+                if (k>=4) s->ht->a1[b+3]=s->ht->a1[b+2];
+                if (k>=3) s->ht->a1[b+2]=s->ht->a1[b+1];
+                if (k>=2) s->ht->a1[b+1]=s->ht->a1[b+0];
+                s->ht->a1[b] = cur;
+                if (ev) { s->ht->a2[elh_hash_a2(seq)]=ev; evict_count++; }
+            }
+
+            if (bestpos) {
+                ip = search; match_spos = bestpos; match_len = bestlen;
+                goto _found;
+            }
+            if (do_adapt && ++adapt_count >= ELH_ADAPT_WINDOW) {
+                if (!evict_count) k=1;
+                else if (evict_count > ELH_ADAPT_UP && k < ELH_BUCKET_MAX) k++;
+                else if (evict_count < ELH_ADAPT_DOWN && k > 1) k--;
+                adapt_count = 0; evict_count = 0;
+            }
             skips++;
-            search += 1 + (skips >> (acc + 2));
+            search += 1 + (skips >> (acc+2));
         }
-        goto _stream_last_lits;
+        goto _last;
 
-    _stream_found:
-        while (ip > anchor && mptr > base && ip[-1] == mptr[-1]) {
-            ip--; mptr--;
-        }
-
+    _found:;
+        /* Extend backward */
         {
-            U32 litLen = (U32)(ip - anchor);
-            U8* token  = op++;
+            U32 ip_s = SPOS(ip);
+            while (ip > anchor && ip_s > cstart &&
+                   match_spos > 0 && ip[-1] == WB(match_spos-1)) {
+                ip--; ip_s--; match_spos--;
+            }
+            /* Re-measure match length from adjusted ip */
+            match_len = ELH_MINMATCH;
+            while ((ip+match_len) < mlimit &&
+                   src8[(ip-src8)+match_len] == WB(match_spos+match_len))
+                match_len++;
+        }
+
+        /* Emit token + literals + offset + match length */
+        {
+            U32 litLen  = (U32)(ip - anchor);
+            U32 ip_s    = SPOS(ip);
+            U32 offset  = ip_s - match_spos;
+            U32 mlCode  = match_len - ELH_MINMATCH;
+            U8* token   = op++;
+
             if (op + litLen + (litLen/255) + 10 > oend) return -1;
 
             if (litLen >= ELH_RUN_MASK) {
@@ -435,16 +492,9 @@ int elh_stream_compress(elh_stream_t* s,
             } else {
                 *token = (U8)(litLen << 4);
             }
-            memcpy(op, anchor, litLen);
-            op += litLen;
+            memcpy(op, anchor, litLen); op += litLen;
 
-            const U8* ma = ip+4, *mc = mptr+4;
-            while (ma < mlimit && *ma == *mc) { ma++; mc++; }
-            U32 matchLen = (U32)(ma - ip);
-            U32 mlCode   = matchLen - ELH_MINMATCH;
-            U32 curHere  = s->curPos + (U32)(ip - (const U8*)src);
-
-            elh_write16(op, (U16)(ip - mptr)); op += 2;
+            elh_write16(op, (U16)offset); op += 2;
 
             if (mlCode < ELH_ML_MASK) {
                 *token |= (U8)mlCode;
@@ -456,32 +506,30 @@ int elh_stream_compress(elh_stream_t* s,
                 *op++ = (U8)r;
             }
 
-            ip += matchLen;
-            anchor = ip;
+            ip     += match_len;
+            anchor  = ip;
 
-            const U8* hp = ip - matchLen + 2;
-            while (hp < ip - 1 && hp <= mflimit) {
-                U32 pp = curHere + (U32)(hp - (ip - matchLen));
-                elh_put(s->ht, elh_read32(hp), pp, k);
+            /* Hash match interior */
+            const U8* hp = ip - match_len + 2;
+            while (hp < ip-1 && hp <= mflimit) {
+                U32 seq2 = elh_read32(hp);
+                U32 cur2 = SPOS(hp);
+                U32 h2   = elh_hash_a1(seq2);
+                U32 b2   = h2 * ELH_BUCKET_MAX;
+                U32 ev2  = s->ht->a1[b2+k-1];
+                if (k>=4) s->ht->a1[b2+3]=s->ht->a1[b2+2];
+                if (k>=3) s->ht->a1[b2+2]=s->ht->a1[b2+1];
+                if (k>=2) s->ht->a1[b2+1]=s->ht->a1[b2+0];
+                s->ht->a1[b2] = cur2;
+                if (ev2) s->ht->a2[elh_hash_a2(seq2)] = ev2;
                 hp++;
             }
 
-            /* Adaptive k */
-            if (do_adapt) {
-                evict_count++;
-                if (++adapt_count >= ELH_ADAPT_WINDOW) {
-                    if (evict_count == 0) { k = 1; }
-                    else if (evict_count > ELH_ADAPT_UP && k < ELH_BUCKET_MAX) k++;
-                    else if (evict_count < ELH_ADAPT_DOWN && k > 1) k--;
-                    adapt_count = 0; evict_count = 0;
-                }
-            }
-
-            if (ip > mflimit) goto _stream_last_lits;
+            if (ip > mflimit) goto _last;
         }
     }
 
-_stream_last_lits:;
+_last:;
     {
         U32 litLen = (U32)(iend - anchor);
         if (op + litLen + (litLen/255) + 2 > oend) return -1;
@@ -494,15 +542,17 @@ _stream_last_lits:;
         } else {
             *token = (U8)(litLen << 4);
         }
-        memcpy(op, anchor, litLen);
-        op += litLen;
+        memcpy(op, anchor, litLen); op += litLen;
     }
 
-    /* Advance position counter by chunk size */
-    s->curPos += (U32)srcSize;
+#undef WB
+#undef WR32
+#undef SPOS
 
+    s->curPos += (U32)srcSize;
     return (int)(op - (U8*)dst);
 }
+
 int elh_stream_decompress(elh_stream_t* s,
                           const void* src, int srcSize,
                           void* dst, int dstCapacity)
