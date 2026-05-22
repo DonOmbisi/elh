@@ -351,7 +351,8 @@ void elh_stream_reset(elh_stream_t* s) {
     if (!s) return;
     memset(s->ht, 0, sizeof(elh_htable_t));
     s->curPos   = 0;
-    s->histPos  = 0;
+    s->wfill    = 0;
+    s->histPos  = 0;  /* cumulative decompressed bytes = 0 */
     s->histFill = 0;
 }
 
@@ -383,14 +384,17 @@ int elh_stream_compress(elh_stream_t* s,
     U8*  oend = op + dstCapacity;
     U32  cstart = s->curPos;  /* stream position of src8[0] */
 
-    /* Copy chunk into ring buffer so previous-chunk matches remain accessible */
-    for (int i = 0; i < srcSize; i++)
-        s->window_buf[(cstart + i) & 65535] = src8[i];
-    s->wfill = (cstart + srcSize) < 65536 ? (cstart + srcSize) : 65536;
+    /* window_buf is updated AFTER compression so that previous-chunk
+     * data remains readable during WR32 match verification.
+     * We copy current chunk into ring AFTER the compression loop. */
 
-#define WB(P)     (s->window_buf[(P) & 65535])
-#define WR32(P)   ((U32)WB(P)|((U32)WB((P)+1)<<8)|((U32)WB((P)+2)<<16)|((U32)WB((P)+3)<<24))
 #define SPOS(ptr) (cstart + (U32)((ptr) - src8))
+
+/* Get byte at stream position P:
+ * - if P >= cstart: byte is in current chunk, read from src8
+ * - if P < cstart:  byte is in previous chunk, read from window_buf ring */
+#define GETB(P) ((P) >= cstart ? src8[(P) - cstart] : s->window_buf[(P) & 65535])
+#define GR32(P) ((U32)GETB(P)|((U32)GETB((P)+1)<<8)|((U32)GETB((P)+2)<<16)|((U32)GETB((P)+3)<<24))
 
     const U8* anchor  = src8;
     const U8* ip      = src8;
@@ -420,16 +424,16 @@ int elh_stream_compress(elh_stream_t* s,
                 U32 p = s->ht->a1[b+j];
                 if (!p || cur - p > ELH_DISTANCE_MAX) continue;
                 if (wlim && cur - p > wlim) continue;
-                if (WR32(p) != seq) continue;
+                if (GR32(p) != seq) continue;
                 U32 ml = ELH_MINMATCH;
                 while (search+ml < mlimit && ml < 65530 &&
-                       src8[(search-src8)+ml] == WB(p+ml)) ml++;
+                       src8[(search-src8)+ml] == GETB(p+ml)) ml++;
                 if (ml > bestlen) { bestlen = ml; bestpos = p; }
             }
             if (!bestpos && ovf) {
                 U32 p = s->ht->a2[elh_hash_a2(seq)];
                 if (p && cur-p <= ELH_DISTANCE_MAX &&
-                    (!wlim || cur-p <= wlim) && WR32(p) == seq) {
+                    (!wlim || cur-p <= wlim) && GR32(p) == seq) {
                     bestpos = p; bestlen = ELH_MINMATCH;
                 }
             }
@@ -460,17 +464,17 @@ int elh_stream_compress(elh_stream_t* s,
         goto _last;
 
     _found:;
-        /* Extend backward */
+        /* Extend backward — only within current chunk
+         * (ip must stay >= src8; cannot read before caller buffer) */
         {
-            U32 ip_s = SPOS(ip);
-            while (ip > anchor && ip_s > cstart &&
-                   match_spos > 0 && ip[-1] == WB(match_spos-1)) {
-                ip--; ip_s--; match_spos--;
+            while (ip > anchor && ip > src8 &&
+                   match_spos > 0 && ip[-1] == GETB(match_spos-1)) {
+                ip--; match_spos--;
             }
             /* Re-measure match length from adjusted ip */
             match_len = ELH_MINMATCH;
             while ((ip+match_len) < mlimit &&
-                   src8[(ip-src8)+match_len] == WB(match_spos+match_len))
+                   src8[(ip-src8)+match_len] == GETB(match_spos+match_len))
                 match_len++;
         }
 
@@ -545,85 +549,18 @@ _last:;
         memcpy(op, anchor, litLen); op += litLen;
     }
 
-#undef WB
-#undef WR32
+#undef GETB
+#undef GR32
 #undef SPOS
+
+    /* Now copy current chunk into window_buf for future chunk lookups */
+    for (int i = 0; i < srcSize; i++)
+        s->window_buf[(cstart + i) & 65535] = src8[i];
+    s->wfill = (cstart + (U32)srcSize) < 65536
+               ? (cstart + (U32)srcSize) : 65536;
 
     s->curPos += (U32)srcSize;
     return (int)(op - (U8*)dst);
-}
-
-int elh_stream_decompress(elh_stream_t* s,
-                          const void* src, int srcSize,
-                          void* dst, int dstCapacity)
-{
-    if (!s || !src || !dst) return -1;
-
-    const U8* ip   = (const U8*)src;
-    const U8* iend = ip + srcSize;
-    U8* op   = (U8*)dst;
-    U8* op0  = op;
-    U8* oend = op + dstCapacity;
-
-    while (ip < iend) {
-        U8  token  = *ip++;
-        U32 litLen = token >> 4;
-        if (litLen == ELH_RUN_MASK) {
-            U8 sv; do { sv = *ip++; litLen += sv; } while (sv == 255 && ip < iend);
-        }
-        if (op + litLen > oend || ip + litLen > iend) return -1;
-        memcpy(op, ip, litLen); op += litLen; ip += litLen;
-        if (ip >= iend) break;
-        if (ip + 2 > iend) return -1;
-        U16 offset; memcpy(&offset, ip, 2); ip += 2;
-        if (!offset) return -1;
-
-        U32 matchLen = (token & ELH_ML_MASK) + ELH_MINMATCH;
-        if ((token & ELH_ML_MASK) == ELH_ML_MASK) {
-            U8 sv; do { sv = *ip++; matchLen += sv; } while (sv == 255 && ip < iend);
-        }
-        if (op + matchLen > oend) return -1;
-
-        U32 cur_out = (U32)(op - op0);
-        if (offset <= cur_out) {
-            /* Match entirely within current chunk */
-            const U8* match = op - offset;
-            U32 i; for (i = 0; i < matchLen; i++) op[i] = match[i];
-        } else {
-            /* Match spans into history from previous chunks */
-            U32 back_in_history = offset - cur_out;
-            if (back_in_history > s->histFill) return -1;
-            U32 hist_idx = s->histFill - back_in_history;
-            U32 i;
-            for (i = 0; i < matchLen; i++) {
-                U32 idx = hist_idx + i;
-                if (idx < s->histFill) {
-                    op[i] = s->history[idx];
-                } else {
-                    /* Crossed into current chunk output */
-                    op[i] = op0[idx - s->histFill];
-                }
-            }
-        }
-        op += matchLen;
-    }
-
-    /* Update history: keep last 65536 bytes of all output so far */
-    U32 outLen = (U32)(op - op0);
-    if (s->histFill + outLen <= 65536) {
-        memcpy(s->history + s->histFill, op0, outLen);
-        s->histFill += outLen;
-    } else if (outLen >= 65536) {
-        memcpy(s->history, op0 + outLen - 65536, 65536);
-        s->histFill = 65536;
-    } else {
-        U32 keep = 65536 - outLen;
-        memmove(s->history, s->history + (s->histFill - keep), keep);
-        memcpy(s->history + keep, op0, outLen);
-        s->histFill = 65536;
-    }
-
-    return (int)(op - op0);
 }
 
 /* ── Block decompressor ─────────────────────────────────── */
@@ -658,5 +595,92 @@ int elh_decompress(const void* src, int srcSize,
         U32 i; for (i = 0; i < matchLen; i++) op[i] = match[i];
         op += matchLen;
     }
+    return (int)(op - op0);
+}
+
+int elh_stream_decompress(elh_stream_t* s,
+                          const void* src, int srcSize,
+                          void* dst, int dstCapacity)
+{
+    if (!s || !src || !dst) return -1;
+
+    const U8* ip   = (const U8*)src;
+    const U8* iend = ip + srcSize;
+    U8* op   = (U8*)dst;
+    U8* op0  = op;
+    U8* oend = op + dstCapacity;
+
+    /* s->history is a ring buffer of last 65536 decompressed bytes.
+     * s->histFill = total bytes decompressed so far (caps at 65536 after wrap).
+     * s->histPos  = next write position in ring (0..65535).
+     *
+     * Byte at absolute stream position P is at:
+     *   history[(histPos - (total_out - P)) & 65535]
+     * where total_out = cumulative decompressed bytes before this chunk.
+     *
+     * For a match at offset O from current op:
+     *   absolute position = total_out_before_chunk + (op - op0) - O
+     */
+    /* total_before = total decompressed bytes written before this chunk
+     * We track this as histPos (uncapped cumulative counter) */
+    U32 total_before = s->histPos;  /* cumulative total before this chunk */
+
+    while (ip < iend) {
+        U8  token  = *ip++;
+        U32 litLen = token >> 4;
+        if (litLen == ELH_RUN_MASK) {
+            U8 sv; do { sv = *ip++; litLen += sv; } while (sv == 255 && ip < iend);
+        }
+        if (op + litLen > oend || ip + litLen > iend) return -1;
+        memcpy(op, ip, litLen); op += litLen; ip += litLen;
+        if (ip >= iend) break;
+        if (ip + 2 > iend) return -1;
+        U16 offset; memcpy(&offset, ip, 2); ip += 2;
+        if (!offset) return -1;
+
+        U32 matchLen = (token & ELH_ML_MASK) + ELH_MINMATCH;
+        if ((token & ELH_ML_MASK) == ELH_ML_MASK) {
+            U8 sv; do { sv = *ip++; matchLen += sv; } while (sv == 255 && ip < iend);
+        }
+        if (op + matchLen > oend) return -1;
+
+        U32 cur_out = (U32)(op - op0); /* bytes written in this chunk so far */
+
+        if (offset <= cur_out) {
+            /* Match entirely within current chunk output */
+            const U8* match = op - offset;
+            U32 i; for (i = 0; i < matchLen; i++) op[i] = match[i];
+        } else {
+            /* Match spans into history from previous chunks.
+             * Absolute stream position of match start:
+             *   abs_pos = total_before + cur_out - offset */
+            U32 abs_match = total_before + cur_out - offset;
+            U32 i;
+            for (i = 0; i < matchLen; i++) {
+                U32 abs_pos = abs_match + i;
+                if (abs_pos >= total_before) {
+                    /* Crossed back into current chunk output */
+                    op[i] = op0[abs_pos - total_before];
+                } else {
+                    /* In history ring buffer.
+                     * Byte at absolute stream position P is at
+                     * history[P & 65535] — written sequentially. */
+                    op[i] = s->history[abs_pos & 65535];
+                }
+            }
+        }
+        op += matchLen;
+    }
+
+    /* Update history: write sequentially into ring.
+     * Byte at absolute stream position P goes to history[P & 65535].
+     * histPos is the cumulative total (uncapped). */
+    U32 outLen = (U32)(op - op0);
+    U32 i;
+    for (i = 0; i < outLen; i++)
+        s->history[(total_before + i) & 65535] = op0[i];
+    s->histPos   = total_before + outLen;  /* cumulative total */
+    s->histFill  = s->histPos > 65536 ? 65536 : s->histPos; /* valid bytes */
+
     return (int)(op - op0);
 }
