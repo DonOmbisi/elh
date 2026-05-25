@@ -418,17 +418,18 @@ int elh_stream_compress(elh_stream_t* s,
             U32 h1  = elh_hash_a1(seq);
             U32 b   = h1 * ELH_BUCKET_MAX;
             U32 bestlen = 0, bestpos = 0;
-            int j;
-
-            for (j = 0; j < k; j++) {
-                U32 p = s->ht->a1[b+j];
-                if (!p || cur - p > ELH_DISTANCE_MAX) continue;
-                if (wlim && cur - p > wlim) continue;
-                if (GR32(p) != seq) continue;
-                U32 ml = ELH_MINMATCH;
-                while (search+ml < mlimit && ml < 65530 &&
-                       src8[(search-src8)+ml] == GETB(p+ml)) ml++;
-                if (ml > bestlen) { bestlen = ml; bestpos = p; }
+            {
+                int j;
+                for (j = 0; j < k; j++) {
+                    U32 p = s->ht->a1[b+j];
+                    if (!p || cur - p > ELH_DISTANCE_MAX) continue;
+                    if (wlim && cur - p > wlim) continue;
+                    if (GR32(p) != seq) continue;
+                    U32 ml = ELH_MINMATCH;
+                    while (search+ml < mlimit && ml < 65530 &&
+                           src8[(search-src8)+ml] == GETB(p+ml)) ml++;
+                    if (ml > bestlen) { bestlen = ml; bestpos = p; }
+                }
             }
             if (!bestpos && ovf) {
                 U32 p = s->ht->a2[elh_hash_a2(seq)];
