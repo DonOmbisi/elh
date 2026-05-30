@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ELH Compression Tester</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172026;
+      --muted: #61707c;
+      --line: #d8e0e6;
+      --panel: #ffffff;
+      --page: #f5f7f8;
+      --accent: #0f766e;
+      --accent-ink: #ffffff;
+      --good: #116932;
+      --bad: #a33128;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--page);
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+
+    main {
+      width: min(1040px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      line-height: 0.95;
+      font-weight: 760;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    a {
+      color: var(--accent);
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .status {
+      min-width: 180px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .status strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    section {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .drop {
+      display: grid;
+      gap: 12px;
+      place-items: center;
+      min-height: 220px;
+      border: 1px dashed #9aabb8;
+      border-radius: 8px;
+      padding: 22px;
+      text-align: center;
+      background: #fbfcfd;
+    }
+
+    .drop input {
+      width: min(100%, 360px);
+    }
+
+    .file-meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+      min-height: 1.4em;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #34424d;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--ink);
+      background: #ffffff;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: #ffffff;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button,
+    .download {
+      min-height: 42px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    button.secondary,
+    .download {
+      background: #ffffff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    button:disabled,
+    .download[aria-disabled="true"] {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .metrics {
+      display: grid;
+      gap: 10px;
+    }
+
+    .metric {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding: 0 0 10px;
+      font-size: 0.95rem;
+    }
+
+    .metric:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .metric span {
+      color: var(--muted);
+    }
+
+    .metric strong {
+      text-align: right;
+    }
+
+    .result {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 6px;
+      background: #eef6f4;
+      color: var(--accent);
+      font-weight: 750;
+    }
+
+    .result.good {
+      background: #eef8f1;
+      color: var(--good);
+    }
+
+    .result.bad {
+      background: #fff1ef;
+      color: var(--bad);
+    }
+
+    .downloads {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .benchmark-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .bench-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfd;
+    }
+
+    .bench-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+    }
+
+    .bench-card dl {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+    }
+
+    .bench-card div {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .bench-card dt {
+      color: var(--muted);
+    }
+
+    .bench-card dd {
+      margin: 0;
+      font-weight: 750;
+      text-align: right;
+    }
+
+    code {
+      background: #edf1f3;
+      border-radius: 4px;
+      padding: 2px 4px;
+      color: #26323a;
+    }
+
+    @media (max-width: 780px) {
+      main {
+        width: min(100% - 24px, 1040px);
+        padding: 20px 0;
+      }
+
+      header,
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .benchmark-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>ELH Compression Tester</h1>
+        <p>Upload a file, compress it through the live ELH API, decompress it again, and verify the restored bytes with SHA-256.</p>
+      </div>
+      <div class="status" id="apiStatus">
+        <strong>API status</strong>
+        Checking...
+      </div>
+    </header>
+
+    <div class="layout">
+      <section>
+        <h2>Test A File</h2>
+        <div class="drop">
+          <input id="fileInput" type="file">
+          <div>
+            <strong id="fileName">No file selected</strong>
+            <div class="file-meta" id="fileMeta"></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <label>
+            Bucket slots
+            <select id="bucketK">
+              <option value="4" selected>4</option>
+              <option value="2">2</option>
+              <option value="8">8</option>
+            </select>
+          </label>
+          <label>
+            Chunk size
+            <input id="chunkSize" type="number" min="1024" max="65536" step="1024" value="65536">
+          </label>
+          <label>
+            Kafka batch size
+            <input id="batchSize" type="number" min="1024" step="1024" value="262144">
+          </label>
+          <label>
+            Match history
+            <span class="check">
+              <input id="overflow" type="checkbox" checked>
+              Overflow enabled
+            </span>
+          </label>
+          <label>
+            API key
+            <input id="apiKey" type="password" autocomplete="off" placeholder="Only needed when enabled">
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="runBtn" disabled>Compress, Decompress, Verify</button>
+          <button id="benchBtn" class="secondary" disabled>Benchmark AI/Kafka Modes</button>
+          <button id="sweepBtn" class="secondary" disabled>Find Best Kafka Config</button>
+          <button class="secondary" id="resetBtn" type="button">Reset</button>
+          <a class="secondary" href="/docs">Open API Docs</a>
+        </div>
+
+        <div class="result" id="message">Choose a file to start.</div>
+      </section>
+
+      <section>
+        <h2>Results</h2>
+        <div class="metrics">
+          <div class="metric"><span>Original</span><strong id="originalSize">-</strong></div>
+          <div class="metric"><span>Compressed</span><strong id="compressedSize">-</strong></div>
+          <div class="metric"><span>Ratio</span><strong id="ratio">-</strong></div>
+          <div class="metric"><span>Round trip</span><strong id="roundTrip">-</strong></div>
+          <div class="metric"><span>Original SHA-256</span><strong id="originalHash">-</strong></div>
+          <div class="metric"><span>Restored SHA-256</span><strong id="restoredHash">-</strong></div>
+        </div>
+        <div class="downloads">
+          <a class="download" id="downloadCompressed" aria-disabled="true">Download .elh</a>
+          <a class="download" id="downloadRestored" aria-disabled="true">Download restored file</a>
+        </div>
+      </section>
+
+      <section class="wide">
+        <h2>AI/Kafka Benchmark</h2>
+        <div class="benchmark-grid">
+          <div class="bench-card">
+            <h3>Continuous Log</h3>
+            <dl>
+              <div><dt>Ratio</dt><dd id="benchContinuousRatio">-</dd></div>
+              <div><dt>LZ4 ratio</dt><dd id="benchContinuousLz4Ratio">-</dd></div>
+              <div><dt>ELH vs LZ4</dt><dd id="benchContinuousGain">-</dd></div>
+              <div><dt>Compressed</dt><dd id="benchContinuousBytes">-</dd></div>
+              <div><dt>Compress</dt><dd id="benchContinuousCompress">-</dd></div>
+              <div><dt>Verify</dt><dd id="benchContinuousVerified">-</dd></div>
+            </dl>
+          </div>
+          <div class="bench-card">
+            <h3>Kafka Batches</h3>
+            <dl>
+              <div><dt>Ratio</dt><dd id="benchBatchRatio">-</dd></div>
+              <div><dt>LZ4 ratio</dt><dd id="benchBatchLz4Ratio">-</dd></div>
+              <div><dt>ELH vs LZ4</dt><dd id="benchBatchGain">-</dd></div>
+              <div><dt>Compressed</dt><dd id="benchBatchBytes">-</dd></div>
+              <div><dt>Compress</dt><dd id="benchBatchCompress">-</dd></div>
+              <div><dt>Batches</dt><dd id="benchBatchUnits">-</dd></div>
+            </dl>
+          </div>
+          <div class="bench-card">
+            <h3>Per Record</h3>
+            <dl>
+              <div><dt>Ratio</dt><dd id="benchRecordRatio">-</dd></div>
+              <div><dt>LZ4 ratio</dt><dd id="benchRecordLz4Ratio">-</dd></div>
+              <div><dt>ELH vs LZ4</dt><dd id="benchRecordGain">-</dd></div>
+              <div><dt>Compressed</dt><dd id="benchRecordBytes">-</dd></div>
+              <div><dt>Compress</dt><dd id="benchRecordCompress">-</dd></div>
+              <div><dt>Records</dt><dd id="benchRecordUnits">-</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section class="wide">
+        <h2>Kafka Config Sweep</h2>
+        <div class="benchmark-grid">
+          <div class="bench-card">
+            <h3>Best ELH</h3>
+            <dl>
+              <div><dt>Config</dt><dd id="sweepElhConfig">-</dd></div>
+              <div><dt>Ratio</dt><dd id="sweepElhRatio">-</dd></div>
+              <div><dt>Compressed</dt><dd id="sweepElhBytes">-</dd></div>
+              <div><dt>ELH vs LZ4</dt><dd id="sweepElhGain">-</dd></div>
+            </dl>
+          </div>
+          <div class="bench-card">
+            <h3>Best LZ4</h3>
+            <dl>
+              <div><dt>Batch</dt><dd id="sweepLz4Batch">-</dd></div>
+              <div><dt>Ratio</dt><dd id="sweepLz4Ratio">-</dd></div>
+              <div><dt>Compressed</dt><dd id="sweepLz4Bytes">-</dd></div>
+              <div><dt>Verify</dt><dd id="sweepLz4Verified">-</dd></div>
+            </dl>
+          </div>
+          <div class="bench-card">
+            <h3>Sweep</h3>
+            <dl>
+              <div><dt>Configs</dt><dd id="sweepConfigs">-</dd></div>
+              <div><dt>Buckets</dt><dd id="sweepBuckets">-</dd></div>
+              <div><dt>Batches</dt><dd id="sweepBatches">-</dd></div>
+              <div><dt>Mode</dt><dd>Kafka batch</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const fileName = document.getElementById("fileName");
+    const fileMeta = document.getElementById("fileMeta");
+    const runBtn = document.getElementById("runBtn");
+    const benchBtn = document.getElementById("benchBtn");
+    const sweepBtn = document.getElementById("sweepBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const message = document.getElementById("message");
+    const apiStatus = document.getElementById("apiStatus");
+    const bucketK = document.getElementById("bucketK");
+    const chunkSize = document.getElementById("chunkSize");
+    const batchSize = document.getElementById("batchSize");
+    const apiKey = document.getElementById("apiKey");
+    const overflow = document.getElementById("overflow");
+    const downloadCompressed = document.getElementById("downloadCompressed");
+    const downloadRestored = document.getElementById("downloadRestored");
+
+    const fields = {
+      originalSize: document.getElementById("originalSize"),
+      compressedSize: document.getElementById("compressedSize"),
+      ratio: document.getElementById("ratio"),
+      roundTrip: document.getElementById("roundTrip"),
+      originalHash: document.getElementById("originalHash"),
+      restoredHash: document.getElementById("restoredHash"),
+    };
+
+    const state = {
+      compressedUrl: null,
+      restoredUrl: null,
+    };
+
+    const benchFields = {
+      continuous: {
+        ratio: document.getElementById("benchContinuousRatio"),
+        lz4Ratio: document.getElementById("benchContinuousLz4Ratio"),
+        gain: document.getElementById("benchContinuousGain"),
+        bytes: document.getElementById("benchContinuousBytes"),
+        compress: document.getElementById("benchContinuousCompress"),
+        verified: document.getElementById("benchContinuousVerified"),
+      },
+      kafka_batch: {
+        ratio: document.getElementById("benchBatchRatio"),
+        lz4Ratio: document.getElementById("benchBatchLz4Ratio"),
+        gain: document.getElementById("benchBatchGain"),
+        bytes: document.getElementById("benchBatchBytes"),
+        compress: document.getElementById("benchBatchCompress"),
+        units: document.getElementById("benchBatchUnits"),
+      },
+      per_record: {
+        ratio: document.getElementById("benchRecordRatio"),
+        lz4Ratio: document.getElementById("benchRecordLz4Ratio"),
+        gain: document.getElementById("benchRecordGain"),
+        bytes: document.getElementById("benchRecordBytes"),
+        compress: document.getElementById("benchRecordCompress"),
+        units: document.getElementById("benchRecordUnits"),
+      },
+    };
+
+    const sweepFields = {
+      elhConfig: document.getElementById("sweepElhConfig"),
+      elhRatio: document.getElementById("sweepElhRatio"),
+      elhBytes: document.getElementById("sweepElhBytes"),
+      elhGain: document.getElementById("sweepElhGain"),
+      lz4Batch: document.getElementById("sweepLz4Batch"),
+      lz4Ratio: document.getElementById("sweepLz4Ratio"),
+      lz4Bytes: document.getElementById("sweepLz4Bytes"),
+      lz4Verified: document.getElementById("sweepLz4Verified"),
+      configs: document.getElementById("sweepConfigs"),
+      buckets: document.getElementById("sweepBuckets"),
+      batches: document.getElementById("sweepBatches"),
+    };
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return "0 B";
+      const units = ["B", "KiB", "MiB", "GiB"];
+      const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
+    }
+
+    function setMessage(text, kind = "") {
+      message.textContent = text;
+      message.className = `result ${kind}`.trim();
+    }
+
+    function shortHash(hash) {
+      return hash ? `${hash.slice(0, 12)}...${hash.slice(-12)}` : "-";
+    }
+
+    async function sha256(buffer) {
+      const digest = await crypto.subtle.digest("SHA-256", buffer);
+      return Array.from(new Uint8Array(digest))
+        .map((value) => value.toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    async function responseBytes(response) {
+      if (response.ok) return response.arrayBuffer();
+
+      let detail = `${response.status} ${response.statusText}`;
+      try {
+        const body = await response.json();
+        if (body.detail) detail = body.detail;
+      } catch (_) {
+        // Keep the HTTP status message if the body is not JSON.
+      }
+      throw new Error(detail);
+    }
+
+    function authHeaders(extra = {}) {
+      const headers = { ...extra };
+      const key = apiKey.value.trim();
+      if (key) headers["X-API-Key"] = key;
+      return headers;
+    }
+
+    function clearDownloads() {
+      for (const url of [state.compressedUrl, state.restoredUrl]) {
+        if (url) URL.revokeObjectURL(url);
+      }
+      state.compressedUrl = null;
+      state.restoredUrl = null;
+      for (const link of [downloadCompressed, downloadRestored]) {
+        link.removeAttribute("href");
+        link.setAttribute("aria-disabled", "true");
+      }
+    }
+
+    function resetResults() {
+      clearDownloads();
+      for (const field of Object.values(fields)) {
+        field.textContent = "-";
+        field.title = "";
+      }
+      for (const group of Object.values(benchFields)) {
+        for (const field of Object.values(group)) field.textContent = "-";
+      }
+      for (const field of Object.values(sweepFields)) field.textContent = "-";
+      setMessage(fileInput.files.length ? "Ready to test." : "Choose a file to start.");
+    }
+
+    function selectedFile() {
+      return fileInput.files[0] || null;
+    }
+
+    fileInput.addEventListener("change", () => {
+      const file = selectedFile();
+      runBtn.disabled = !file;
+      benchBtn.disabled = !file;
+      sweepBtn.disabled = !file;
+      resetResults();
+      if (!file) {
+        fileName.textContent = "No file selected";
+        fileMeta.textContent = "";
+        return;
+      }
+      fileName.textContent = file.name || "Selected file";
+      fileMeta.textContent = `${formatBytes(file.size)} sent to this API server`;
+      fields.originalSize.textContent = formatBytes(file.size);
+    });
+
+    resetBtn.addEventListener("click", () => {
+      fileInput.value = "";
+      runBtn.disabled = true;
+      benchBtn.disabled = true;
+      sweepBtn.disabled = true;
+      fileName.textContent = "No file selected";
+      fileMeta.textContent = "";
+      resetResults();
+    });
+
+    function compressionParams() {
+      return new URLSearchParams({
+        bucket_k: bucketK.value,
+        overflow: overflow.checked ? "1" : "0",
+        chunk: chunkSize.value,
+      });
+    }
+
+    runBtn.addEventListener("click", async () => {
+      const file = selectedFile();
+      if (!file) return;
+
+      runBtn.disabled = true;
+      clearDownloads();
+      setMessage("Reading file and calculating original hash...");
+
+      try {
+        const original = await file.arrayBuffer();
+        const originalDigest = await sha256(original);
+        fields.originalHash.textContent = shortHash(originalDigest);
+        fields.originalHash.title = originalDigest;
+
+        const params = compressionParams();
+
+        setMessage("Compressing through /compress...");
+        const compressedResponse = await fetch(`/compress?${params.toString()}`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: original,
+        });
+        const compressed = await responseBytes(compressedResponse);
+
+        setMessage("Decompressing through /decompress...");
+        const restoredResponse = await fetch("/decompress", {
+          method: "POST",
+          headers: authHeaders(),
+          body: compressed,
+        });
+        const restored = await responseBytes(restoredResponse);
+
+        setMessage("Verifying restored bytes...");
+        const restoredDigest = await sha256(restored);
+        const matches = originalDigest === restoredDigest && original.byteLength === restored.byteLength;
+        const ratio = original.byteLength === 0 ? 0 : (compressed.byteLength / original.byteLength) * 100;
+
+        fields.compressedSize.textContent = formatBytes(compressed.byteLength);
+        fields.ratio.textContent = `${ratio.toFixed(2)}%`;
+        fields.roundTrip.textContent = matches ? "Exact match" : "Mismatch";
+        fields.restoredHash.textContent = shortHash(restoredDigest);
+        fields.restoredHash.title = restoredDigest;
+
+        state.compressedUrl = URL.createObjectURL(new Blob([compressed], { type: "application/vnd.elh.frame" }));
+        state.restoredUrl = URL.createObjectURL(new Blob([restored], { type: file.type || "application/octet-stream" }));
+
+        downloadCompressed.href = state.compressedUrl;
+        downloadCompressed.download = `${file.name || "file"}.elh`;
+        downloadCompressed.removeAttribute("aria-disabled");
+        downloadRestored.href = state.restoredUrl;
+        downloadRestored.download = `restored-${file.name || "file"}`;
+        downloadRestored.removeAttribute("aria-disabled");
+
+        setMessage(
+          matches
+            ? `Verified: restored file is byte-for-byte identical. Compression ratio ${ratio.toFixed(2)}%.`
+            : "Verification failed: restored bytes differ.",
+          matches ? "good" : "bad",
+        );
+      } catch (error) {
+        setMessage(`Test failed: ${error.message}`, "bad");
+      } finally {
+        runBtn.disabled = !selectedFile();
+      }
+    });
+
+    function renderBench(mode, result) {
+      const target = benchFields[mode];
+      target.ratio.textContent = `${result.ratio_percent.toFixed(2)}%`;
+      target.lz4Ratio.textContent = `${result.lz4.ratio_percent.toFixed(2)}%`;
+      target.gain.textContent = `${result.elh_size_savings_vs_lz4_percent.toFixed(2)}%`;
+      target.bytes.textContent = formatBytes(result.compressed_bytes);
+      target.compress.textContent = `${result.compress_ms.toFixed(2)} ms`;
+      if (target.units) target.units.textContent = String(result.units);
+      if (target.verified) target.verified.textContent = result.verified ? "Exact" : "Mismatch";
+    }
+
+    benchBtn.addEventListener("click", async () => {
+      const file = selectedFile();
+      if (!file) return;
+
+      benchBtn.disabled = true;
+      runBtn.disabled = true;
+      setMessage("Running AI/Kafka benchmark modes...");
+
+      try {
+        const original = await file.arrayBuffer();
+        const params = compressionParams();
+        params.set("batch", batchSize.value);
+
+        const response = await fetch(`/benchmark?${params.toString()}`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: original,
+        });
+        if (!response.ok) {
+          let detail = `${response.status} ${response.statusText}`;
+          try {
+            const body = await response.json();
+            if (body.detail) detail = body.detail;
+          } catch (_) {
+            // Keep the HTTP status message if the body is not JSON.
+          }
+          throw new Error(detail);
+        }
+
+        const report = await response.json();
+        renderBench("continuous", report.modes.continuous);
+        renderBench("kafka_batch", report.modes.kafka_batch);
+        renderBench("per_record", report.modes.per_record);
+        setMessage("Benchmark complete: compare continuous, Kafka batch, and per-record ratios.", "good");
+      } catch (error) {
+        setMessage(`Benchmark failed: ${error.message}`, "bad");
+      } finally {
+        const hasFile = Boolean(selectedFile());
+        benchBtn.disabled = !hasFile;
+        sweepBtn.disabled = !hasFile;
+        runBtn.disabled = !hasFile;
+      }
+    });
+
+    function renderSweep(report) {
+      const bestElh = report.sweep.best_elh;
+      const bestLz4 = report.sweep.best_lz4;
+      sweepFields.elhConfig.textContent = `k=${bestElh.bucket_k}, overflow=${bestElh.overflow ? "on" : "off"}, batch=${formatBytes(bestElh.batch_size)}`;
+      sweepFields.elhRatio.textContent = `${bestElh.ratio_percent.toFixed(2)}%`;
+      sweepFields.elhBytes.textContent = formatBytes(bestElh.compressed_bytes);
+      sweepFields.elhGain.textContent = `${bestElh.elh_size_savings_vs_lz4_percent.toFixed(2)}%`;
+      sweepFields.lz4Batch.textContent = formatBytes(bestLz4.batch_size);
+      sweepFields.lz4Ratio.textContent = `${bestLz4.ratio_percent.toFixed(2)}%`;
+      sweepFields.lz4Bytes.textContent = formatBytes(bestLz4.compressed_bytes);
+      sweepFields.lz4Verified.textContent = bestLz4.verified ? "Exact" : "Mismatch";
+      sweepFields.configs.textContent = String(report.sweep.configs_tested);
+      sweepFields.buckets.textContent = report.buckets.join(", ");
+      sweepFields.batches.textContent = report.batches.map(formatBytes).join(", ");
+    }
+
+    sweepBtn.addEventListener("click", async () => {
+      const file = selectedFile();
+      if (!file) return;
+
+      sweepBtn.disabled = true;
+      benchBtn.disabled = true;
+      runBtn.disabled = true;
+      setMessage("Sweeping Kafka batch configurations...");
+
+      try {
+        const original = await file.arrayBuffer();
+        const params = new URLSearchParams({
+          buckets: "1,2,4,8",
+          overflows: "0,1",
+          batches: "16384,65536,262144,1048576",
+          chunk: chunkSize.value,
+        });
+
+        const response = await fetch(`/benchmark/sweep?${params.toString()}`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: original,
+        });
+        if (!response.ok) {
+          let detail = `${response.status} ${response.statusText}`;
+          try {
+            const body = await response.json();
+            if (body.detail) detail = body.detail;
+          } catch (_) {
+            // Keep the HTTP status message if the body is not JSON.
+          }
+          throw new Error(detail);
+        }
+
+        const report = await response.json();
+        renderSweep(report);
+        const gain = report.sweep.best_elh.elh_size_savings_vs_lz4_percent;
+        const direction = gain >= 0 ? "beats" : "trails";
+        setMessage(`Sweep complete: best ELH ${direction} clean LZ4 by ${Math.abs(gain).toFixed(2)}%.`, gain >= 0 ? "good" : "");
+      } catch (error) {
+        setMessage(`Sweep failed: ${error.message}`, "bad");
+      } finally {
+        const hasFile = Boolean(selectedFile());
+        sweepBtn.disabled = !hasFile;
+        benchBtn.disabled = !hasFile;
+        runBtn.disabled = !hasFile;
+      }
+    });
+
+    async function loadStatus() {
+      try {
+        const response = await fetch("/health");
+        const health = await response.json();
+        apiStatus.innerHTML = `<strong>API status</strong>${health.ok ? "Online" : "Unavailable"}<br>Max request: ${formatBytes(health.max_request_bytes)}`;
+      } catch (_) {
+        apiStatus.innerHTML = "<strong>API status</strong>Unavailable";
+      }
+    }
+
+    loadStatus();
+  </script>
+</body>
+</html>

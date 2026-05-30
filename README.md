@@ -105,6 +105,35 @@ cmake --build build
 PYTHONPATH=python ELH_LIBRARY=build/libelh.so python python/test_elh.py
 ```
 
+### HTTP API And Browser Tester
+
+The `api/` directory contains a FastAPI service for public demos, remote
+experiments, and a browser-based tester at `/`:
+
+```bash
+PYTHONPATH=python ELH_LIBRARY=build/libelh.so LZ4_LIBRARY=build/liblz4_clean.so ELH_API_KEY=change-me \
+  uvicorn api.app:app --host 0.0.0.0 --port 8000
+
+open http://localhost:8000/
+curl -X POST --data-binary @events.jsonl "http://localhost:8000/benchmark?batch=262144"
+curl -X POST --data-binary @events.jsonl "http://localhost:8000/benchmark/sweep?buckets=1,2,4,8&overflows=0,1"
+curl -X POST --data-binary @events.json "http://localhost:8000/ingest/batch?event_type=autovest.audit"
+curl -X POST --data-binary @input.log http://localhost:8000/compress -o input.elh
+curl -X POST --data-binary @input.elh http://localhost:8000/decompress -o restored.log
+```
+
+See `api/README.md` for Docker deployment and request-size limits.
+
+The benchmark path compares ELH against a clean upstream LZ4 v1.10.0 baseline
+vendored in `third_party/lz4`.
+
+The ingestion path stores compressed ELH event batches plus metadata and can
+replay exact JSONL payloads for audit, analytics, or downstream AI training.
+
+For Railway deployment, `railway.json` points to `api/Dockerfile`; set
+`ELH_API_KEY`, `ELH_API_MAX_BYTES`, and optionally attach a volume at
+`/app/data` for persistent ingestion batches.
+
 ### Block API
 
 The block API emits a raw LZ4-compatible block. Callers must track the original

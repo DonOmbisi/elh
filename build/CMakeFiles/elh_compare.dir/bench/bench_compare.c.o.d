@@ -19,7 +19,7 @@ CMakeFiles/elh_compare.dir/bench/bench_compare.c.o: \
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
- /mnt/c/Users/donmi/Music/comp-dts/elh/../lz4/lib/lz4.h \
+ /mnt/c/Users/donmi/Music/comp-dts/elh/third_party/lz4/lib/lz4.h \
  /usr/include/stdio.h /usr/lib/gcc/x86_64-linux-gnu/15/include/stdarg.h \
  /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \

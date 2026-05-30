@@ -10,6 +10,16 @@ target_include_directories(elh PUBLIC include)
 add_library(elh_shared SHARED ${ELH_SOURCES})
 set_target_properties(elh_shared PROPERTIES OUTPUT_NAME elh)
 target_include_directories(elh_shared PUBLIC include)
+
+# Clean upstream LZ4 baseline, pinned in third_party/lz4.
+set(LZ4_CLEAN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/lz4")
+add_library(lz4_clean STATIC "${LZ4_CLEAN_ROOT}/lib/lz4.c")
+target_include_directories(lz4_clean PUBLIC "${LZ4_CLEAN_ROOT}/lib")
+target_compile_options(lz4_clean PRIVATE -O2)
+add_library(lz4_clean_shared SHARED "${LZ4_CLEAN_ROOT}/lib/lz4.c")
+set_target_properties(lz4_clean_shared PROPERTIES OUTPUT_NAME lz4_clean)
+target_include_directories(lz4_clean_shared PUBLIC "${LZ4_CLEAN_ROOT}/lib")
+target_compile_options(lz4_clean_shared PRIVATE -O2)
 # Enable AVX2 if available, fall back to scalar
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-mavx2 HAVE_AVX2)
@@ -40,17 +50,13 @@ add_executable(elh_frame_example examples/frame_roundtrip.c)
 target_link_libraries(elh_frame_example elh)
 target_compile_options(elh_frame_example PRIVATE -O2)
 
-# In-process ELH vs LZ4 comparison benchmark
-set(LZ4_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../lz4")
-if(EXISTS "${LZ4_ROOT}/lib/lz4.c" AND EXISTS "${LZ4_ROOT}/lib/lz4.h")
-    add_executable(elh_compare bench/bench_compare.c "${LZ4_ROOT}/lib/lz4.c")
-    target_include_directories(elh_compare PRIVATE "${LZ4_ROOT}/lib")
-    target_link_libraries(elh_compare elh)
-    target_compile_options(elh_compare PRIVATE -O2)
-endif()
+# In-process ELH vs clean upstream LZ4 comparison benchmark.
+add_executable(elh_compare bench/bench_compare.c)
+target_link_libraries(elh_compare elh lz4_clean)
+target_compile_options(elh_compare PRIVATE -O2)
 
 # Install
-install(TARGETS elh elh_shared ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
+install(TARGETS elh elh_shared lz4_clean lz4_clean_shared ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
 install(FILES include/elh.h include/elh_frame.h DESTINATION include)
 
 # Correctness tests
@@ -87,4 +93,26 @@ if(Python3_Interpreter_FOUND)
                      PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/python
                      ${Python3_EXECUTABLE}
                      ${CMAKE_CURRENT_SOURCE_DIR}/python/test_elh.py)
+    add_test(NAME python_lz4_baseline
+             COMMAND ${CMAKE_COMMAND}
+                     -E env
+                     LZ4_LIBRARY=$<TARGET_FILE:lz4_clean_shared>
+                     PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/python
+                     ${Python3_EXECUTABLE}
+                     ${CMAKE_CURRENT_SOURCE_DIR}/python/test_lz4_baseline.py)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import fastapi"
+        RESULT_VARIABLE HAVE_FASTAPI
+        OUTPUT_QUIET
+        ERROR_QUIET)
+    if(HAVE_FASTAPI EQUAL 0)
+        add_test(NAME api_tests
+                 COMMAND ${CMAKE_COMMAND}
+                         -E env
+                         ELH_LIBRARY=$<TARGET_FILE:elh_shared>
+                         LZ4_LIBRARY=$<TARGET_FILE:lz4_clean_shared>
+                         PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/python:${CMAKE_CURRENT_SOURCE_DIR}/api
+                         ${Python3_EXECUTABLE}
+                         ${CMAKE_CURRENT_SOURCE_DIR}/api/test_api.py)
+    endif()
 endif()

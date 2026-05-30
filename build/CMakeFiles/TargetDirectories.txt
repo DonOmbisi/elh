@@ -1,5 +1,7 @@
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_shared.dir
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/lz4_clean.dir
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/lz4_clean_shared.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_bench.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_cli.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_frame_example.dir

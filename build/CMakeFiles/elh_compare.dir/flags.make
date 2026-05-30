@@ -4,7 +4,7 @@
 # compile C with /usr/bin/cc
 C_DEFINES = -DELH_HAVE_AVX2
 
-C_INCLUDES = -I/mnt/c/Users/donmi/Music/comp-dts/elh/../lz4/lib -I/mnt/c/Users/donmi/Music/comp-dts/elh/include
+C_INCLUDES = -I/mnt/c/Users/donmi/Music/comp-dts/elh/include -I/mnt/c/Users/donmi/Music/comp-dts/elh/third_party/lz4/lib
 
 C_FLAGS = -O3 -DNDEBUG -std=gnu11 -O2
 

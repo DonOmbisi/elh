@@ -198,6 +198,32 @@ elh_shared/fast:
 .PHONY : elh_shared/fast
 
 #=============================================================================
+# Target rules for targets named lz4_clean
+
+# Build rule for target.
+lz4_clean: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lz4_clean
+.PHONY : lz4_clean
+
+# fast build rule for target.
+lz4_clean/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lz4_clean.dir/build.make CMakeFiles/lz4_clean.dir/build
+.PHONY : lz4_clean/fast
+
+#=============================================================================
+# Target rules for targets named lz4_clean_shared
+
+# Build rule for target.
+lz4_clean_shared: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lz4_clean_shared
+.PHONY : lz4_clean_shared
+
+# fast build rule for target.
+lz4_clean_shared/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lz4_clean_shared.dir/build.make CMakeFiles/lz4_clean_shared.dir/build
+.PHONY : lz4_clean_shared/fast
+
+#=============================================================================
 # Target rules for targets named elh_bench
 
 # Build rule for target.
@@ -360,30 +386,6 @@ examples/frame_roundtrip.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_example.dir/build.make CMakeFiles/elh_frame_example.dir/examples/frame_roundtrip.c.s
 .PHONY : examples/frame_roundtrip.c.s
 
-mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.o: mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o
-.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.o
-
-# target to build an object file
-mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o
-.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o
-
-mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.i: mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.i
-.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.i
-
-# target to preprocess a source file
-mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.i
-.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.i
-
-mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.s: mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.s
-.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.s
-
-# target to generate assembly for a file
-mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.s
-.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.s
-
 src/elh.o: src/elh.c.o
 .PHONY : src/elh.o
 
@@ -534,6 +536,33 @@ tests/test_streaming.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_stream_test.dir/build.make CMakeFiles/elh_stream_test.dir/tests/test_streaming.c.s
 .PHONY : tests/test_streaming.c.s
 
+third_party/lz4/lib/lz4.o: third_party/lz4/lib/lz4.c.o
+.PHONY : third_party/lz4/lib/lz4.o
+
+# target to build an object file
+third_party/lz4/lib/lz4.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lz4_clean.dir/build.make CMakeFiles/lz4_clean.dir/third_party/lz4/lib/lz4.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lz4_clean_shared.dir/build.make CMakeFiles/lz4_clean_shared.dir/third_party/lz4/lib/lz4.c.o
+.PHONY : third_party/lz4/lib/lz4.c.o
+
+third_party/lz4/lib/lz4.i: third_party/lz4/lib/lz4.c.i
+.PHONY : third_party/lz4/lib/lz4.i
+
+# target to preprocess a source file
+third_party/lz4/lib/lz4.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lz4_clean.dir/build.make CMakeFiles/lz4_clean.dir/third_party/lz4/lib/lz4.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lz4_clean_shared.dir/build.make CMakeFiles/lz4_clean_shared.dir/third_party/lz4/lib/lz4.c.i
+.PHONY : third_party/lz4/lib/lz4.c.i
+
+third_party/lz4/lib/lz4.s: third_party/lz4/lib/lz4.c.s
+.PHONY : third_party/lz4/lib/lz4.s
+
+# target to generate assembly for a file
+third_party/lz4/lib/lz4.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lz4_clean.dir/build.make CMakeFiles/lz4_clean.dir/third_party/lz4/lib/lz4.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lz4_clean_shared.dir/build.make CMakeFiles/lz4_clean_shared.dir/third_party/lz4/lib/lz4.c.s
+.PHONY : third_party/lz4/lib/lz4.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -556,6 +585,8 @@ help:
 	@echo "... elh_shared"
 	@echo "... elh_stream_test"
 	@echo "... elh_test"
+	@echo "... lz4_clean"
+	@echo "... lz4_clean_shared"
 	@echo "... bench/bench.o"
 	@echo "... bench/bench.i"
 	@echo "... bench/bench.s"
@@ -565,9 +596,6 @@ help:
 	@echo "... examples/frame_roundtrip.o"
 	@echo "... examples/frame_roundtrip.i"
 	@echo "... examples/frame_roundtrip.s"
-	@echo "... mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.o"
-	@echo "... mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.i"
-	@echo "... mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.s"
 	@echo "... src/elh.o"
 	@echo "... src/elh.i"
 	@echo "... src/elh.s"
@@ -586,6 +614,9 @@ help:
 	@echo "... tests/test_streaming.o"
 	@echo "... tests/test_streaming.i"
 	@echo "... tests/test_streaming.s"
+	@echo "... third_party/lz4/lib/lz4.o"
+	@echo "... third_party/lz4/lib/lz4.i"
+	@echo "... third_party/lz4/lib/lz4.s"
 .PHONY : help
 
 

@@ -3,8 +3,8 @@ elh_compare: \
   /usr/lib/gcc/x86_64-linux-gnu/15/../../../x86_64-linux-gnu/crti.o \
   /usr/lib/gcc/x86_64-linux-gnu/15/crtbeginS.o \
   CMakeFiles/elh_compare.dir/bench/bench_compare.c.o \
-  CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o \
   libelh.a \
+  liblz4_clean.a \
   /usr/lib/gcc/x86_64-linux-gnu/15/libgcc.a \
   /usr/lib/gcc/x86_64-linux-gnu/15/libgcc_s.so \
   /usr/lib/gcc/x86_64-linux-gnu/15/libgcc_s.so \
@@ -35,9 +35,9 @@ elh_compare: \
 
 CMakeFiles/elh_compare.dir/bench/bench_compare.c.o:
 
-CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o:
-
 libelh.a:
+
+liblz4_clean.a:
 
 /usr/lib/gcc/x86_64-linux-gnu/15/libgcc.a:
 

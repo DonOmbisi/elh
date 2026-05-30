@@ -9,7 +9,6 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/mnt/c/Users/donmi/Music/comp-dts/elh/bench/bench_compare.c" "CMakeFiles/elh_compare.dir/bench/bench_compare.c.o" "gcc" "CMakeFiles/elh_compare.dir/bench/bench_compare.c.o.d"
-  "/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c" "CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o" "gcc" "CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o.d"
   "" "elh_compare" "gcc" "CMakeFiles/elh_compare.dir/link.d"
   )
 

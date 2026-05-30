@@ -59,6 +59,8 @@ set(CMAKE_MAKEFILE_PRODUCTS
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/elh.dir/DependInfo.cmake"
   "CMakeFiles/elh_shared.dir/DependInfo.cmake"
+  "CMakeFiles/lz4_clean.dir/DependInfo.cmake"
+  "CMakeFiles/lz4_clean_shared.dir/DependInfo.cmake"
   "CMakeFiles/elh_bench.dir/DependInfo.cmake"
   "CMakeFiles/elh_cli.dir/DependInfo.cmake"
   "CMakeFiles/elh_frame_example.dir/DependInfo.cmake"

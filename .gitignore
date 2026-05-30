@@ -1,0 +1,14 @@
+.venv/
+build/
+data/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.elh
+*.out
+*.zip
+*.tar
+*.gz
+elh_test_results/
+Bizna-AutoVest-Build54/

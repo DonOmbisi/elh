@@ -1,7 +1,9 @@
-cli_roundtrip 3 8.80157
-correctness 2 0.0063193
-streaming 2 0.00759172
-frame 2 0.00433031
-frame_example 2 0.00232848
-python_bindings 1 0.259866
+cli_roundtrip 15 6.08027
+correctness 14 0.00555534
+streaming 14 0.00448307
+frame 14 0.00178644
+frame_example 14 0.00116491
+python_bindings 13 0.0868677
+api_tests 0 0
+python_lz4_baseline 7 0.0917503
 ---

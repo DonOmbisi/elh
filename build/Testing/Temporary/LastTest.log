@@ -1,10 +1,10 @@
-Start testing: May 30 13:37 EAT
+Start testing: May 30 16:56 EAT
 ----------------------------------------------------------
-1/6 Testing: correctness
-1/6 Test: correctness
+1/7 Testing: correctness
+1/7 Test: correctness
 Command: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_test"
 Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
-"correctness" start time: May 30 13:37 EAT
+"correctness" start time: May 30 16:56 EAT
 Output:
 ----------------------------------------------------------
 ELH Correctness Tests
@@ -65,18 +65,18 @@ ELH Correctness Tests
 
 Results: 52/52 passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.08 sec
 ----------------------------------------------------------
 Test Passed.
-"correctness" end time: May 30 13:37 EAT
+"correctness" end time: May 30 16:56 EAT
 "correctness" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-2/6 Testing: streaming
-2/6 Test: streaming
+2/7 Testing: streaming
+2/7 Test: streaming
 Command: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_stream_test"
 Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
-"streaming" start time: May 30 13:37 EAT
+"streaming" start time: May 30 16:56 EAT
 Output:
 ----------------------------------------------------------
 ELH Streaming API Tests
@@ -109,18 +109,18 @@ ELH Streaming API Tests
 
 Results: 18/18 passed
 <end of output>
-Test time =   0.02 sec
+Test time =   0.06 sec
 ----------------------------------------------------------
 Test Passed.
-"streaming" end time: May 30 13:37 EAT
+"streaming" end time: May 30 16:56 EAT
 "streaming" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-3/6 Testing: frame
-3/6 Test: frame
+3/7 Testing: frame
+3/7 Test: frame
 Command: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_frame_test"
 Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
-"frame" start time: May 30 13:37 EAT
+"frame" start time: May 30 16:56 EAT
 Output:
 ----------------------------------------------------------
 ELH Frame API Tests
@@ -136,18 +136,18 @@ ELH Frame API Tests
 
 Results: 7/7 passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.03 sec
 ----------------------------------------------------------
 Test Passed.
-"frame" end time: May 30 13:37 EAT
+"frame" end time: May 30 16:56 EAT
 "frame" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-4/6 Testing: cli_roundtrip
-4/6 Test: cli_roundtrip
+4/7 Testing: cli_roundtrip
+4/7 Test: cli_roundtrip
 Command: "/usr/bin/cmake" "-DCLI=/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_cli" "-DWORKDIR=/mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test" "-P" "/mnt/c/Users/donmi/Music/comp-dts/elh/tests/test_cli.cmake"
 Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
-"cli_roundtrip" start time: May 30 13:37 EAT
+"cli_roundtrip" start time: May 30 16:56 EAT
 Output:
 ----------------------------------------------------------
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test/input.txt: 138893 -> 13149 bytes (9.47%)
@@ -155,47 +155,67 @@ Output:
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test/input.txt: 138893 -> 104173 bytes (75.00%)
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test/input-small.elh: 104173 -> 138893 bytes
 <end of output>
-Test time =  26.40 sec
+Test time =  91.20 sec
 ----------------------------------------------------------
 Test Passed.
-"cli_roundtrip" end time: May 30 13:38 EAT
-"cli_roundtrip" time elapsed: 00:00:26
+"cli_roundtrip" end time: May 30 16:58 EAT
+"cli_roundtrip" time elapsed: 00:01:31
 ----------------------------------------------------------
 
-5/6 Testing: frame_example
-5/6 Test: frame_example
+5/7 Testing: frame_example
+5/7 Test: frame_example
 Command: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_frame_example"
 Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
-"frame_example" start time: May 30 13:38 EAT
+"frame_example" start time: May 30 16:58 EAT
 Output:
 ----------------------------------------------------------
 ELH frame roundtrip: 77 -> 113 bytes
 <end of output>
-Test time =   0.00 sec
+Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"frame_example" end time: May 30 13:38 EAT
+"frame_example" end time: May 30 16:58 EAT
 "frame_example" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-6/6 Testing: python_bindings
-6/6 Test: python_bindings
+6/7 Testing: python_bindings
+6/7 Test: python_bindings
 Command: "/usr/bin/cmake" "-E" "env" "ELH_LIBRARY=/mnt/c/Users/donmi/Music/comp-dts/elh/build/libelh.so" "PYTHONPATH=/mnt/c/Users/donmi/Music/comp-dts/elh/python" "/usr/bin/python3" "/mnt/c/Users/donmi/Music/comp-dts/elh/python/test_elh.py"
 Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
-"python_bindings" start time: May 30 13:38 EAT
+"python_bindings" start time: May 30 16:58 EAT
 Output:
 ----------------------------------------------------------
 ....
 ----------------------------------------------------------------------
-Ran 4 tests in 0.005s
+Ran 4 tests in 0.018s
 
 OK
 <end of output>
-Test time =   0.26 sec
+Test time =   1.13 sec
 ----------------------------------------------------------
 Test Passed.
-"python_bindings" end time: May 30 13:38 EAT
-"python_bindings" time elapsed: 00:00:00
+"python_bindings" end time: May 30 16:58 EAT
+"python_bindings" time elapsed: 00:00:01
 ----------------------------------------------------------
 
-End testing: May 30 13:38 EAT
+7/7 Testing: python_lz4_baseline
+7/7 Test: python_lz4_baseline
+Command: "/usr/bin/cmake" "-E" "env" "LZ4_LIBRARY=/mnt/c/Users/donmi/Music/comp-dts/elh/build/liblz4_clean.so" "PYTHONPATH=/mnt/c/Users/donmi/Music/comp-dts/elh/python" "/usr/bin/python3" "/mnt/c/Users/donmi/Music/comp-dts/elh/python/test_lz4_baseline.py"
+Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
+"python_lz4_baseline" start time: May 30 16:58 EAT
+Output:
+----------------------------------------------------------
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.014s
+
+OK
+<end of output>
+Test time =   0.64 sec
+----------------------------------------------------------
+Test Passed.
+"python_lz4_baseline" end time: May 30 16:58 EAT
+"python_lz4_baseline" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: May 30 16:58 EAT
