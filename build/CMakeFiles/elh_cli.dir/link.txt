@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/elh_cli.dir/link.d CMakeFiles/elh_cli.dir/src/elh_cli.c.o -o elh_cli  libelh.a

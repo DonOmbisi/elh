@@ -185,6 +185,19 @@ elh/fast:
 .PHONY : elh/fast
 
 #=============================================================================
+# Target rules for targets named elh_shared
+
+# Build rule for target.
+elh_shared: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 elh_shared
+.PHONY : elh_shared
+
+# fast build rule for target.
+elh_shared/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_shared.dir/build.make CMakeFiles/elh_shared.dir/build
+.PHONY : elh_shared/fast
+
+#=============================================================================
 # Target rules for targets named elh_bench
 
 # Build rule for target.
@@ -196,6 +209,45 @@ elh_bench: cmake_check_build_system
 elh_bench/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_bench.dir/build.make CMakeFiles/elh_bench.dir/build
 .PHONY : elh_bench/fast
+
+#=============================================================================
+# Target rules for targets named elh_cli
+
+# Build rule for target.
+elh_cli: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 elh_cli
+.PHONY : elh_cli
+
+# fast build rule for target.
+elh_cli/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_cli.dir/build.make CMakeFiles/elh_cli.dir/build
+.PHONY : elh_cli/fast
+
+#=============================================================================
+# Target rules for targets named elh_frame_example
+
+# Build rule for target.
+elh_frame_example: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 elh_frame_example
+.PHONY : elh_frame_example
+
+# fast build rule for target.
+elh_frame_example/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_example.dir/build.make CMakeFiles/elh_frame_example.dir/build
+.PHONY : elh_frame_example/fast
+
+#=============================================================================
+# Target rules for targets named elh_compare
+
+# Build rule for target.
+elh_compare: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 elh_compare
+.PHONY : elh_compare
+
+# fast build rule for target.
+elh_compare/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/build
+.PHONY : elh_compare/fast
 
 #=============================================================================
 # Target rules for targets named elh_test
@@ -223,6 +275,19 @@ elh_stream_test/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_stream_test.dir/build.make CMakeFiles/elh_stream_test.dir/build
 .PHONY : elh_stream_test/fast
 
+#=============================================================================
+# Target rules for targets named elh_frame_test
+
+# Build rule for target.
+elh_frame_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 elh_frame_test
+.PHONY : elh_frame_test
+
+# fast build rule for target.
+elh_frame_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_test.dir/build.make CMakeFiles/elh_frame_test.dir/build
+.PHONY : elh_frame_test/fast
+
 bench/bench.o: bench/bench.c.o
 .PHONY : bench/bench.o
 
@@ -247,12 +312,85 @@ bench/bench.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_bench.dir/build.make CMakeFiles/elh_bench.dir/bench/bench.c.s
 .PHONY : bench/bench.c.s
 
+bench/bench_compare.o: bench/bench_compare.c.o
+.PHONY : bench/bench_compare.o
+
+# target to build an object file
+bench/bench_compare.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/bench/bench_compare.c.o
+.PHONY : bench/bench_compare.c.o
+
+bench/bench_compare.i: bench/bench_compare.c.i
+.PHONY : bench/bench_compare.i
+
+# target to preprocess a source file
+bench/bench_compare.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/bench/bench_compare.c.i
+.PHONY : bench/bench_compare.c.i
+
+bench/bench_compare.s: bench/bench_compare.c.s
+.PHONY : bench/bench_compare.s
+
+# target to generate assembly for a file
+bench/bench_compare.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/bench/bench_compare.c.s
+.PHONY : bench/bench_compare.c.s
+
+examples/frame_roundtrip.o: examples/frame_roundtrip.c.o
+.PHONY : examples/frame_roundtrip.o
+
+# target to build an object file
+examples/frame_roundtrip.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_example.dir/build.make CMakeFiles/elh_frame_example.dir/examples/frame_roundtrip.c.o
+.PHONY : examples/frame_roundtrip.c.o
+
+examples/frame_roundtrip.i: examples/frame_roundtrip.c.i
+.PHONY : examples/frame_roundtrip.i
+
+# target to preprocess a source file
+examples/frame_roundtrip.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_example.dir/build.make CMakeFiles/elh_frame_example.dir/examples/frame_roundtrip.c.i
+.PHONY : examples/frame_roundtrip.c.i
+
+examples/frame_roundtrip.s: examples/frame_roundtrip.c.s
+.PHONY : examples/frame_roundtrip.s
+
+# target to generate assembly for a file
+examples/frame_roundtrip.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_example.dir/build.make CMakeFiles/elh_frame_example.dir/examples/frame_roundtrip.c.s
+.PHONY : examples/frame_roundtrip.c.s
+
+mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.o: mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o
+.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.o
+
+# target to build an object file
+mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o
+.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o
+
+mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.i: mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.i
+.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.i
+
+# target to preprocess a source file
+mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.i
+.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.i
+
+mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.s: mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.s
+.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.s
+
+# target to generate assembly for a file
+mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_compare.dir/build.make CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.s
+.PHONY : mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.s
+
 src/elh.o: src/elh.c.o
 .PHONY : src/elh.o
 
 # target to build an object file
 src/elh.c.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh.dir/build.make CMakeFiles/elh.dir/src/elh.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_shared.dir/build.make CMakeFiles/elh_shared.dir/src/elh.c.o
 .PHONY : src/elh.c.o
 
 src/elh.i: src/elh.c.i
@@ -261,6 +399,7 @@ src/elh.i: src/elh.c.i
 # target to preprocess a source file
 src/elh.c.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh.dir/build.make CMakeFiles/elh.dir/src/elh.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_shared.dir/build.make CMakeFiles/elh_shared.dir/src/elh.c.i
 .PHONY : src/elh.c.i
 
 src/elh.s: src/elh.c.s
@@ -269,7 +408,59 @@ src/elh.s: src/elh.c.s
 # target to generate assembly for a file
 src/elh.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh.dir/build.make CMakeFiles/elh.dir/src/elh.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_shared.dir/build.make CMakeFiles/elh_shared.dir/src/elh.c.s
 .PHONY : src/elh.c.s
+
+src/elh_cli.o: src/elh_cli.c.o
+.PHONY : src/elh_cli.o
+
+# target to build an object file
+src/elh_cli.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_cli.dir/build.make CMakeFiles/elh_cli.dir/src/elh_cli.c.o
+.PHONY : src/elh_cli.c.o
+
+src/elh_cli.i: src/elh_cli.c.i
+.PHONY : src/elh_cli.i
+
+# target to preprocess a source file
+src/elh_cli.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_cli.dir/build.make CMakeFiles/elh_cli.dir/src/elh_cli.c.i
+.PHONY : src/elh_cli.c.i
+
+src/elh_cli.s: src/elh_cli.c.s
+.PHONY : src/elh_cli.s
+
+# target to generate assembly for a file
+src/elh_cli.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_cli.dir/build.make CMakeFiles/elh_cli.dir/src/elh_cli.c.s
+.PHONY : src/elh_cli.c.s
+
+src/elh_frame.o: src/elh_frame.c.o
+.PHONY : src/elh_frame.o
+
+# target to build an object file
+src/elh_frame.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh.dir/build.make CMakeFiles/elh.dir/src/elh_frame.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_shared.dir/build.make CMakeFiles/elh_shared.dir/src/elh_frame.c.o
+.PHONY : src/elh_frame.c.o
+
+src/elh_frame.i: src/elh_frame.c.i
+.PHONY : src/elh_frame.i
+
+# target to preprocess a source file
+src/elh_frame.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh.dir/build.make CMakeFiles/elh.dir/src/elh_frame.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_shared.dir/build.make CMakeFiles/elh_shared.dir/src/elh_frame.c.i
+.PHONY : src/elh_frame.c.i
+
+src/elh_frame.s: src/elh_frame.c.s
+.PHONY : src/elh_frame.s
+
+# target to generate assembly for a file
+src/elh_frame.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh.dir/build.make CMakeFiles/elh.dir/src/elh_frame.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_shared.dir/build.make CMakeFiles/elh_shared.dir/src/elh_frame.c.s
+.PHONY : src/elh_frame.c.s
 
 tests/test_correctness.o: tests/test_correctness.c.o
 .PHONY : tests/test_correctness.o
@@ -294,6 +485,30 @@ tests/test_correctness.s: tests/test_correctness.c.s
 tests/test_correctness.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_test.dir/build.make CMakeFiles/elh_test.dir/tests/test_correctness.c.s
 .PHONY : tests/test_correctness.c.s
+
+tests/test_frame.o: tests/test_frame.c.o
+.PHONY : tests/test_frame.o
+
+# target to build an object file
+tests/test_frame.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_test.dir/build.make CMakeFiles/elh_frame_test.dir/tests/test_frame.c.o
+.PHONY : tests/test_frame.c.o
+
+tests/test_frame.i: tests/test_frame.c.i
+.PHONY : tests/test_frame.i
+
+# target to preprocess a source file
+tests/test_frame.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_test.dir/build.make CMakeFiles/elh_frame_test.dir/tests/test_frame.c.i
+.PHONY : tests/test_frame.c.i
+
+tests/test_frame.s: tests/test_frame.c.s
+.PHONY : tests/test_frame.s
+
+# target to generate assembly for a file
+tests/test_frame.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/elh_frame_test.dir/build.make CMakeFiles/elh_frame_test.dir/tests/test_frame.c.s
+.PHONY : tests/test_frame.c.s
 
 tests/test_streaming.o: tests/test_streaming.c.o
 .PHONY : tests/test_streaming.o
@@ -334,17 +549,40 @@ help:
 	@echo "... test"
 	@echo "... elh"
 	@echo "... elh_bench"
+	@echo "... elh_cli"
+	@echo "... elh_compare"
+	@echo "... elh_frame_example"
+	@echo "... elh_frame_test"
+	@echo "... elh_shared"
 	@echo "... elh_stream_test"
 	@echo "... elh_test"
 	@echo "... bench/bench.o"
 	@echo "... bench/bench.i"
 	@echo "... bench/bench.s"
+	@echo "... bench/bench_compare.o"
+	@echo "... bench/bench_compare.i"
+	@echo "... bench/bench_compare.s"
+	@echo "... examples/frame_roundtrip.o"
+	@echo "... examples/frame_roundtrip.i"
+	@echo "... examples/frame_roundtrip.s"
+	@echo "... mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.o"
+	@echo "... mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.i"
+	@echo "... mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.s"
 	@echo "... src/elh.o"
 	@echo "... src/elh.i"
 	@echo "... src/elh.s"
+	@echo "... src/elh_cli.o"
+	@echo "... src/elh_cli.i"
+	@echo "... src/elh_cli.s"
+	@echo "... src/elh_frame.o"
+	@echo "... src/elh_frame.i"
+	@echo "... src/elh_frame.s"
 	@echo "... tests/test_correctness.o"
 	@echo "... tests/test_correctness.i"
 	@echo "... tests/test_correctness.s"
+	@echo "... tests/test_frame.o"
+	@echo "... tests/test_frame.i"
+	@echo "... tests/test_frame.s"
 	@echo "... tests/test_streaming.o"
 	@echo "... tests/test_streaming.i"
 	@echo "... tests/test_streaming.s"

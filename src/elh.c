@@ -22,12 +22,14 @@ typedef uint32_t U32;
 
 static inline U32 elh_read32(const void* p) { U32 v; memcpy(&v, p, 4); return v; }
 static inline void elh_write16(void* p, U16 v) { memcpy(p, &v, 2); }
+static inline void elh_write32(void* p, U32 v) { memcpy(p, &v, 4); }
 
 /* LZ4 block format constants */
 #define ELH_MINMATCH     4
 #define ELH_LASTLITERALS 5
 #define ELH_MFLIMIT      13
-#define ELH_DISTANCE_MAX 65535
+#define ELH_DISTANCE_MAX   65535       /* 16-bit offset limit */
+#define ELH_OFFSET32_ESC   0xFFFF      /* escape: next 4 bytes = real offset */
 #define ELH_ML_MASK      ((1U << 4) - 1)
 #define ELH_RUN_MASK     ((1U << 4) - 1)
 
@@ -154,11 +156,6 @@ static inline U32 elh_get(const elh_htable_t* ht, U32 seq,
 #define ELH_ADAPT_UP        768    /* 75% eviction rate -> increase k */
 #define ELH_ADAPT_DOWN      256    /* 25% eviction rate -> decrease k */
 
-/* Adaptive k constants */
-#define ELH_ADAPT_WINDOW    1024   /* measure eviction rate every N inserts */
-#define ELH_ADAPT_UP        768    /* 75% eviction rate -> increase k */
-#define ELH_ADAPT_DOWN      256    /* 25% eviction rate -> decrease k */
-
 int elh_compress_bound(int n) {
     /* 8 bytes per 64KB block header + LZ4 overhead */
     return n + (n / 255) + (n / 65536 + 1) * 8 + 32;
@@ -168,7 +165,8 @@ int elh_compress(const void* src, int srcSize,
                  void* dst, int dstCapacity,
                  elh_params_t params)
 {
-    if (srcSize <= 0 || !src || !dst) return -1;
+    if (srcSize < 0 || !src || !dst) return -1;
+    if (srcSize == 0) return 0;
     if (dstCapacity < elh_compress_bound(srcSize)) return -1;
 
     int k_init = params.bucket_k < 1 ? 1 :
@@ -357,7 +355,11 @@ void elh_stream_reset(elh_stream_t* s) {
 }
 
 int elh_stream_bound(int srcSize) {
-    return elh_compress_bound(srcSize);
+    /* Add 4 extra bytes per potential match for wide offset overhead
+     * (worst case: every match uses 32-bit offset = 4 extra bytes) */
+    int base = elh_compress_bound(srcSize);
+    int extra = (srcSize / 4) * 4;  /* max matches * 4 bytes extra each */
+    return base + extra;
 }
 
 int elh_stream_compress(elh_stream_t* s,
@@ -367,13 +369,15 @@ int elh_stream_compress(elh_stream_t* s,
     if (!s || srcSize <= 0 || !src || !dst) return -1;
     if (dstCapacity < elh_stream_bound(srcSize)) return -1;
 
-    int k   = s->params.bucket_k < 1 ? 1 :
-              s->params.bucket_k > ELH_BUCKET_MAX ? ELH_BUCKET_MAX :
-              s->params.bucket_k;
-    int ovf = s->params.use_overflow;
-    int acc = s->params.acceleration < 1 ? 1 : s->params.acceleration;
+    int k    = s->params.bucket_k < 1 ? 1 :
+               s->params.bucket_k > ELH_BUCKET_MAX ? ELH_BUCKET_MAX :
+               s->params.bucket_k;
+    int ovf  = s->params.use_overflow;
+    int acc  = s->params.acceleration < 1 ? 1 : s->params.acceleration;
+    int wide = s->params.use_wide_offsets;  /* 1 = 32-bit offset escape format */
+    U32 dist_max = ELH_DISTANCE_MAX;
     U32 wlim = (s->params.window_size <= 0 ||
-                s->params.window_size > ELH_DISTANCE_MAX)
+                (U32)s->params.window_size > dist_max)
                ? 0 : (U32)s->params.window_size;
     const int do_adapt = (s->params.bucket_k == 0);
     if (do_adapt) k = 1;
@@ -422,7 +426,7 @@ int elh_stream_compress(elh_stream_t* s,
                 int j;
                 for (j = 0; j < k; j++) {
                     U32 p = s->ht->a1[b+j];
-                    if (!p || cur - p > ELH_DISTANCE_MAX) continue;
+                    if (!p || cur - p > dist_max) continue;
                     if (wlim && cur - p > wlim) continue;
                     if (GR32(p) != seq) continue;
                     U32 ml = ELH_MINMATCH;
@@ -433,7 +437,7 @@ int elh_stream_compress(elh_stream_t* s,
             }
             if (!bestpos && ovf) {
                 U32 p = s->ht->a2[elh_hash_a2(seq)];
-                if (p && cur-p <= ELH_DISTANCE_MAX &&
+                if (p && cur-p <= dist_max &&
                     (!wlim || cur-p <= wlim) && GR32(p) == seq) {
                     bestpos = p; bestlen = ELH_MINMATCH;
                 }
@@ -499,7 +503,13 @@ int elh_stream_compress(elh_stream_t* s,
             }
             memcpy(op, anchor, litLen); op += litLen;
 
-            elh_write16(op, (U16)offset); op += 2;
+            if (wide && offset > 65534) {
+                /* 32-bit offset: emit escape + 4-byte offset */
+                elh_write16(op, ELH_OFFSET32_ESC); op += 2;
+                elh_write32(op, offset); op += 4;
+            } else {
+                elh_write16(op, (U16)offset); op += 2;
+            }
 
             if (mlCode < ELH_ML_MASK) {
                 *token |= (U8)mlCode;
@@ -636,8 +646,15 @@ int elh_stream_decompress(elh_stream_t* s,
         memcpy(op, ip, litLen); op += litLen; ip += litLen;
         if (ip >= iend) break;
         if (ip + 2 > iend) return -1;
-        U16 offset; memcpy(&offset, ip, 2); ip += 2;
-        if (!offset) return -1;
+        U16 offset16; memcpy(&offset16, ip, 2); ip += 2;
+        if (!offset16) return -1;
+        U32 offset;
+        if (s->params.use_wide_offsets && offset16 == ELH_OFFSET32_ESC) {
+            if (ip + 4 > iend) return -1;
+            memcpy(&offset, ip, 4); ip += 4;
+        } else {
+            offset = (U32)offset16;
+        }
 
         U32 matchLen = (token & ELH_ML_MASK) + ELH_MINMATCH;
         if ((token & ELH_ML_MASK) == ELH_ML_MASK) {

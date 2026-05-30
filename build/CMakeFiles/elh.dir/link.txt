@@ -1,2 +1,2 @@
-/usr/bin/ar qc libelh.a CMakeFiles/elh.dir/src/elh.c.o
+/usr/bin/ar qc libelh.a CMakeFiles/elh.dir/src/elh.c.o CMakeFiles/elh.dir/src/elh_frame.c.o
 /usr/bin/ranlib libelh.a

@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/elh.dir/src/elh.c.o"
   "CMakeFiles/elh.dir/src/elh.c.o.d"
+  "CMakeFiles/elh.dir/src/elh_frame.c.o"
+  "CMakeFiles/elh.dir/src/elh_frame.c.o.d"
   "libelh.a"
   "libelh.pdb"
 )

@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/elh_frame_example.dir/link.d CMakeFiles/elh_frame_example.dir/examples/frame_roundtrip.c.o -o elh_frame_example  libelh.a

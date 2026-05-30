@@ -86,17 +86,33 @@ CMakeFiles/elh.dir/src/elh.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/elh.dir/src/elh.c.s"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh.c -o CMakeFiles/elh.dir/src/elh.c.s
 
+CMakeFiles/elh.dir/src/elh_frame.c.o: CMakeFiles/elh.dir/flags.make
+CMakeFiles/elh.dir/src/elh_frame.c.o: /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh_frame.c
+CMakeFiles/elh.dir/src/elh_frame.c.o: CMakeFiles/elh.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/elh.dir/src/elh_frame.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/elh.dir/src/elh_frame.c.o -MF CMakeFiles/elh.dir/src/elh_frame.c.o.d -o CMakeFiles/elh.dir/src/elh_frame.c.o -c /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh_frame.c
+
+CMakeFiles/elh.dir/src/elh_frame.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/elh.dir/src/elh_frame.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh_frame.c > CMakeFiles/elh.dir/src/elh_frame.c.i
+
+CMakeFiles/elh.dir/src/elh_frame.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/elh.dir/src/elh_frame.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh_frame.c -o CMakeFiles/elh.dir/src/elh_frame.c.s
+
 # Object files for target elh
 elh_OBJECTS = \
-"CMakeFiles/elh.dir/src/elh.c.o"
+"CMakeFiles/elh.dir/src/elh.c.o" \
+"CMakeFiles/elh.dir/src/elh_frame.c.o"
 
 # External object files for target elh
 elh_EXTERNAL_OBJECTS =
 
 libelh.a: CMakeFiles/elh.dir/src/elh.c.o
+libelh.a: CMakeFiles/elh.dir/src/elh_frame.c.o
 libelh.a: CMakeFiles/elh.dir/build.make
 libelh.a: CMakeFiles/elh.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C static library libelh.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking C static library libelh.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/elh.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/elh.dir/link.txt --verbose=$(VERBOSE)
 

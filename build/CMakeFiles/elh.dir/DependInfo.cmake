@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/mnt/c/Users/donmi/Music/comp-dts/elh/src/elh.c" "CMakeFiles/elh.dir/src/elh.c.o" "gcc" "CMakeFiles/elh.dir/src/elh.c.o.d"
+  "/mnt/c/Users/donmi/Music/comp-dts/elh/src/elh_frame.c" "CMakeFiles/elh.dir/src/elh_frame.c.o" "gcc" "CMakeFiles/elh.dir/src/elh_frame.c.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

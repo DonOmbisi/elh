@@ -10,6 +10,23 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
+static void test_empty(void) {
+    elh_params_t p = ELH_PARAMS_DEFAULT;
+    char comp[16];
+    char decomp[16];
+    int cLen = elh_compress("", 0, comp, sizeof(comp), p);
+    int dLen = elh_decompress(comp, cLen, decomp, sizeof(decomp));
+    int ok = (cLen == 0 && dLen == 0);
+
+    tests_run++;
+    if (ok) {
+        tests_passed++;
+        printf("  PASS  %-40s  0->0\n", "empty");
+    } else {
+        printf("  FAIL  %-40s  cLen=%d dLen=%d\n", "empty", cLen, dLen);
+    }
+}
+
 static void test(const char* name, const void* src, int n,
                  int k, int ovf, int acc) {
     int bound = elh_compress_bound(n);
@@ -24,8 +41,9 @@ static void test(const char* name, const void* src, int n,
     tests_run++;
     if (ok) {
         tests_passed++;
+        double ratio = n ? 100.0*cLen/n : 0.0;
         printf("  PASS  %-40s k=%d ovf=%d  %d->%d (%.1f%%)\n",
-               name, k, ovf, n, cLen, 100.0*cLen/n);
+               name, k, ovf, n, cLen, ratio);
     } else {
         printf("  FAIL  %-40s k=%d ovf=%d  dLen=%d expected=%d\n",
                name, k, ovf, dLen, n);
@@ -48,10 +66,17 @@ int main() {
     printf("=====================\n\n");
 
     /* Empty input */
-    test("empty", "", 0, 4, 1, 1);
+    test_empty();
 
-    /* Single byte */
-    test("single byte", "x", 1, 4, 1, 1);
+    /* Tiny inputs around the minimum match length */
+    {
+        const char* tiny = "abcdef";
+        for (int n = 1; n <= 6; n++) {
+            char name[32];
+            snprintf(name, sizeof(name), "tiny input (%d bytes)", n);
+            test(name, tiny, n, 4, 1, 1);
+        }
+    }
 
     /* Highly repetitive */
     {
@@ -78,6 +103,21 @@ int main() {
         for (int i = 0; i < n; i++) s[i] = "hello world "[i%12];
         test_all_params("cross-boundary (128KB)", s, n);
         free(s);
+    }
+
+    /* Window boundary sizes */
+    {
+        int sizes[] = {65535, 65536, 65537};
+        for (int si = 0; si < 3; si++) {
+            int n = sizes[si];
+            char* s = malloc(n);
+            for (int i = 0; i < n; i++)
+                s[i] = (char)("ELH-window-boundary!"[i % 20] + (i / 4096) % 3);
+            char name[48];
+            snprintf(name, sizeof(name), "window boundary (%d bytes)", n);
+            test_all_params(name, s, n);
+            free(s);
+        }
     }
 
     /* Near-random (high entropy) */

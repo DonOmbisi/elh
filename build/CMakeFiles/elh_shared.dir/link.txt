@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/elh_shared.dir/link.d -shared -Wl,-soname,libelh.so -o libelh.so CMakeFiles/elh_shared.dir/src/elh.c.o CMakeFiles/elh_shared.dir/src/elh_frame.c.o

@@ -1,0 +1,201 @@
+Start testing: May 30 13:37 EAT
+----------------------------------------------------------
+1/6 Testing: correctness
+1/6 Test: correctness
+Command: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_test"
+Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
+"correctness" start time: May 30 13:37 EAT
+Output:
+----------------------------------------------------------
+ELH Correctness Tests
+=====================
+
+  PASS  empty                                     0->0
+  PASS  tiny input (1 bytes)                     k=4 ovf=1  1->2 (200.0%)
+  PASS  tiny input (2 bytes)                     k=4 ovf=1  2->3 (150.0%)
+  PASS  tiny input (3 bytes)                     k=4 ovf=1  3->4 (133.3%)
+  PASS  tiny input (4 bytes)                     k=4 ovf=1  4->5 (125.0%)
+  PASS  tiny input (5 bytes)                     k=4 ovf=1  5->6 (120.0%)
+  PASS  tiny input (6 bytes)                     k=4 ovf=1  6->7 (116.7%)
+  PASS  all same byte (64KB)                     k=1 ovf=0  65536->267 (0.4%)
+  PASS  all same byte (64KB)                     k=2 ovf=0  65536->267 (0.4%)
+  PASS  all same byte (64KB)                     k=2 ovf=1  65536->267 (0.4%)
+  PASS  all same byte (64KB)                     k=4 ovf=0  65536->267 (0.4%)
+  PASS  all same byte (64KB)                     k=4 ovf=1  65536->267 (0.4%)
+  PASS  8-byte pattern (32KB)                    k=1 ovf=0  32768->146 (0.4%)
+  PASS  8-byte pattern (32KB)                    k=2 ovf=0  32768->146 (0.4%)
+  PASS  8-byte pattern (32KB)                    k=2 ovf=1  32768->146 (0.4%)
+  PASS  8-byte pattern (32KB)                    k=4 ovf=0  32768->146 (0.4%)
+  PASS  8-byte pattern (32KB)                    k=4 ovf=1  32768->146 (0.4%)
+  PASS  cross-boundary (128KB)                   k=1 ovf=0  131072->535 (0.4%)
+  PASS  cross-boundary (128KB)                   k=2 ovf=0  131072->535 (0.4%)
+  PASS  cross-boundary (128KB)                   k=2 ovf=1  131072->535 (0.4%)
+  PASS  cross-boundary (128KB)                   k=4 ovf=0  131072->535 (0.4%)
+  PASS  cross-boundary (128KB)                   k=4 ovf=1  131072->535 (0.4%)
+  PASS  window boundary (65535 bytes)            k=1 ovf=0  65535->464 (0.7%)
+  PASS  window boundary (65535 bytes)            k=2 ovf=0  65535->431 (0.7%)
+  PASS  window boundary (65535 bytes)            k=2 ovf=1  65535->431 (0.7%)
+  PASS  window boundary (65535 bytes)            k=4 ovf=0  65535->425 (0.6%)
+  PASS  window boundary (65535 bytes)            k=4 ovf=1  65535->425 (0.6%)
+  PASS  window boundary (65536 bytes)            k=1 ovf=0  65536->464 (0.7%)
+  PASS  window boundary (65536 bytes)            k=2 ovf=0  65536->431 (0.7%)
+  PASS  window boundary (65536 bytes)            k=2 ovf=1  65536->431 (0.7%)
+  PASS  window boundary (65536 bytes)            k=4 ovf=0  65536->425 (0.6%)
+  PASS  window boundary (65536 bytes)            k=4 ovf=1  65536->425 (0.6%)
+  PASS  window boundary (65537 bytes)            k=1 ovf=0  65537->464 (0.7%)
+  PASS  window boundary (65537 bytes)            k=2 ovf=0  65537->431 (0.7%)
+  PASS  window boundary (65537 bytes)            k=2 ovf=1  65537->431 (0.7%)
+  PASS  window boundary (65537 bytes)            k=4 ovf=0  65537->425 (0.6%)
+  PASS  window boundary (65537 bytes)            k=4 ovf=1  65537->425 (0.6%)
+  PASS  pseudo-random (4KB)                      k=1 ovf=0  4096->4114 (100.4%)
+  PASS  pseudo-random (4KB)                      k=2 ovf=0  4096->4114 (100.4%)
+  PASS  pseudo-random (4KB)                      k=2 ovf=1  4096->4114 (100.4%)
+  PASS  pseudo-random (4KB)                      k=4 ovf=0  4096->4114 (100.4%)
+  PASS  pseudo-random (4KB)                      k=4 ovf=1  4096->4114 (100.4%)
+  PASS  english text (repeated)                  k=1 ovf=0  16800->203 (1.2%)
+  PASS  english text (repeated)                  k=2 ovf=0  16800->203 (1.2%)
+  PASS  english text (repeated)                  k=2 ovf=1  16800->203 (1.2%)
+  PASS  english text (repeated)                  k=4 ovf=0  16800->199 (1.2%)
+  PASS  english text (repeated)                  k=4 ovf=1  16800->199 (1.2%)
+  PASS  acceleration=1                           k=4 ovf=1  16384->78 (0.5%)
+  PASS  acceleration=2                           k=4 ovf=1  16384->78 (0.5%)
+  PASS  acceleration=3                           k=4 ovf=1  16384->78 (0.5%)
+  PASS  acceleration=4                           k=4 ovf=1  16384->78 (0.5%)
+  PASS  acceleration=5                           k=4 ovf=1  16384->78 (0.5%)
+
+Results: 52/52 passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"correctness" end time: May 30 13:37 EAT
+"correctness" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/6 Testing: streaming
+2/6 Test: streaming
+Command: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_stream_test"
+Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
+"streaming" start time: May 30 13:37 EAT
+Output:
+----------------------------------------------------------
+ELH Streaming API Tests
+=======================
+
+  PASS  cross-chunk pattern                      chunk= 4096  131072->812 (0.6%)
+  PASS  cross-chunk pattern                      chunk= 1024  131072->1676 (1.3%)
+  PASS  cross-chunk pattern                      chunk=  256  131072->5132 (3.9%)
+  PASS  single-byte chunks                       chunk=    1  1024->2048 (200.0%)
+  PASS  chunk > input                            chunk= 4096  11->12 (109.1%)
+  PASS  kv-cache simulation                      chunk= 2048  65536->960 (1.5%)
+  PASS  kv-cache simulation                      chunk=  512  65536->1824 (2.8%)
+  PASS  k=1                                      chunk= 1024  32768->424 (1.3%)
+  PASS  k=2 ovf                                  chunk= 1024  32768->424 (1.3%)
+  PASS  k=4 ovf                                  chunk= 1024  32768->424 (1.3%)
+  PASS  adaptive                                 chunk= 1024  32768->424 (1.3%)
+
+  Testing reset clears state...
+  PASS  reset produces identical output
+
+  Testing exact 65535-byte streaming offset...
+  PASS  exact offset 65535 (narrow) final chunk=32 bytes
+  PASS  exact offset 65535 (wide) final chunk=36 bytes
+  PASS  wide escape adds 4 bytes at offset 65535
+
+  Testing streaming chunk sizes around 64KB...
+  PASS  stream window chunk=65535                chunk=65535  131105->749 (0.6%)
+  PASS  stream window chunk=65536                chunk=65536  131105->746 (0.6%)
+  PASS  stream window chunk=65537                chunk=65537  131105->746 (0.6%)
+
+Results: 18/18 passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"streaming" end time: May 30 13:37 EAT
+"streaming" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/6 Testing: frame
+3/6 Test: frame
+Command: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_frame_test"
+Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
+"frame" start time: May 30 13:37 EAT
+Output:
+----------------------------------------------------------
+ELH Frame API Tests
+===================
+
+  PASS  empty frame
+  PASS  compat fixture raw abc
+  PASS  repeated text default chunks
+  PASS  repeated text small chunks
+  PASS  frame window boundary chunks
+  PASS  random data raw fallback
+  PASS  malformed frame rejection
+
+Results: 7/7 passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"frame" end time: May 30 13:37 EAT
+"frame" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/6 Testing: cli_roundtrip
+4/6 Test: cli_roundtrip
+Command: "/usr/bin/cmake" "-DCLI=/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_cli" "-DWORKDIR=/mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test" "-P" "/mnt/c/Users/donmi/Music/comp-dts/elh/tests/test_cli.cmake"
+Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
+"cli_roundtrip" start time: May 30 13:37 EAT
+Output:
+----------------------------------------------------------
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test/input.txt: 138893 -> 13149 bytes (9.47%)
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test/input.elh: 13149 -> 138893 bytes
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test/input.txt: 138893 -> 104173 bytes (75.00%)
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/cli_test/input-small.elh: 104173 -> 138893 bytes
+<end of output>
+Test time =  26.40 sec
+----------------------------------------------------------
+Test Passed.
+"cli_roundtrip" end time: May 30 13:38 EAT
+"cli_roundtrip" time elapsed: 00:00:26
+----------------------------------------------------------
+
+5/6 Testing: frame_example
+5/6 Test: frame_example
+Command: "/mnt/c/Users/donmi/Music/comp-dts/elh/build/elh_frame_example"
+Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
+"frame_example" start time: May 30 13:38 EAT
+Output:
+----------------------------------------------------------
+ELH frame roundtrip: 77 -> 113 bytes
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"frame_example" end time: May 30 13:38 EAT
+"frame_example" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/6 Testing: python_bindings
+6/6 Test: python_bindings
+Command: "/usr/bin/cmake" "-E" "env" "ELH_LIBRARY=/mnt/c/Users/donmi/Music/comp-dts/elh/build/libelh.so" "PYTHONPATH=/mnt/c/Users/donmi/Music/comp-dts/elh/python" "/usr/bin/python3" "/mnt/c/Users/donmi/Music/comp-dts/elh/python/test_elh.py"
+Directory: /mnt/c/Users/donmi/Music/comp-dts/elh/build
+"python_bindings" start time: May 30 13:38 EAT
+Output:
+----------------------------------------------------------
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.005s
+
+OK
+<end of output>
+Test time =   0.26 sec
+----------------------------------------------------------
+Test Passed.
+"python_bindings" end time: May 30 13:38 EAT
+"python_bindings" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: May 30 13:38 EAT

@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/elh_compare.dir/link.d CMakeFiles/elh_compare.dir/bench/bench_compare.c.o "CMakeFiles/elh_compare.dir/mnt/c/Users/donmi/Music/comp-dts/lz4/lib/lz4.c.o" -o elh_compare  libelh.a

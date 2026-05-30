@@ -1,7 +1,12 @@
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh.dir
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_shared.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_bench.dir
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_cli.dir
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_frame_example.dir
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_compare.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_test.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_stream_test.dir
+/mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/elh_frame_test.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/test.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/edit_cache.dir
 /mnt/c/Users/donmi/Music/comp-dts/elh/build/CMakeFiles/rebuild_cache.dir

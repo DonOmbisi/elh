@@ -171,6 +171,34 @@ CMakeFiles/elh.dir/src/elh.c.o: /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh.c 
   /usr/lib/gcc/x86_64-linux-gnu/15/include/xsavesintrin.h \
   /usr/lib/gcc/x86_64-linux-gnu/15/include/xtestintrin.h
 
+CMakeFiles/elh.dir/src/elh_frame.c.o: /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh_frame.c \
+  /mnt/c/Users/donmi/Music/comp-dts/elh/include/elh.h \
+  /mnt/c/Users/donmi/Music/comp-dts/elh/include/elh_frame.h \
+  /usr/include/features-time64.h \
+  /usr/include/features.h \
+  /usr/include/stdc-predef.h \
+  /usr/include/stdint.h \
+  /usr/include/string.h \
+  /usr/include/strings.h \
+  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+  /usr/include/x86_64-linux-gnu/bits/long-double.h \
+  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/x86_64-linux-gnu/bits/time64.h \
+  /usr/include/x86_64-linux-gnu/bits/timesize.h \
+  /usr/include/x86_64-linux-gnu/bits/types.h \
+  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
+  /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+  /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+  /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+  /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+  /usr/lib/gcc/x86_64-linux-gnu/15/include/stddef.h \
+  /usr/lib/gcc/x86_64-linux-gnu/15/include/stdint.h
+
 
 /usr/lib/gcc/x86_64-linux-gnu/15/include/xtestintrin.h:
 
@@ -294,6 +322,8 @@ CMakeFiles/elh.dir/src/elh.c.o: /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh.c 
 
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
 
+/mnt/c/Users/donmi/Music/comp-dts/elh/include/elh_frame.h:
+
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h:
 
 /usr/include/x86_64-linux-gnu/bits/wordsize.h:
@@ -375,6 +405,8 @@ CMakeFiles/elh.dir/src/elh.c.o: /mnt/c/Users/donmi/Music/comp-dts/elh/src/elh.c 
 /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/15/include/avx512vp2intersectintrin.h:
+
+/mnt/c/Users/donmi/Music/comp-dts/elh/src/elh_frame.c:
 
 /usr/lib/gcc/x86_64-linux-gnu/15/include/tmmintrin.h:
 
