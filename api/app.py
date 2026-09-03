@@ -9,10 +9,12 @@ import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+import threading
 
 from fastapi import FastAPI, HTTPException, Request, Response, Security
 from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
+from fastapi.middleware.cors import CORSMiddleware
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,11 +33,64 @@ INGEST_DIR = Path(os.environ.get("ELH_INGEST_DIR", str(ROOT / "data" / "ingest")
 API_KEY = os.environ.get("ELH_API_KEY") or os.environ.get("ELH_INGEST_API_KEY") or ""
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
+# Thread-safe lock for metadata.jsonl writes to prevent race conditions
+_metadata_lock = threading.Lock()
+
+# Simple in-memory rate limiter to prevent API abuse
+class RateLimiter:
+    def __init__(self, max_requests: int = 100, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = {}  # {client_id: [timestamp1, timestamp2, ...]}
+        self.lock = threading.Lock()
+    
+    def is_allowed(self, client_id: str) -> bool:
+        now = time.time()
+        with self.lock:
+            # Clean up old requests outside the time window
+            if client_id in self.requests:
+                self.requests[client_id] = [
+                    ts for ts in self.requests[client_id]
+                    if now - ts < self.window_seconds
+                ]
+            else:
+                self.requests[client_id] = []
+            
+            # Check if under the limit
+            if len(self.requests[client_id]) < self.max_requests:
+                self.requests[client_id].append(now)
+                return True
+            return False
+
+_rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
+
 app = FastAPI(
     title="ELH Compression API",
     version="0.1.0",
     description="HTTP API for ELH frame compression and decompression.",
 )
+
+# Add CORS middleware for broader API accessibility
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Rate limiting middleware
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    # Skip rate limiting for health endpoint
+    if request.url.path == "/health":
+        return await call_next(request)
+    
+    client_id = request.client.host if request.client else "unknown"
+    if not _rate_limiter.is_allowed(client_id):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Maximum 100 requests per minute.")
+    
+    return await call_next(request)
 
 
 @app.get("/", include_in_schema=False)
@@ -225,8 +280,9 @@ def normalize_event_body(body: bytes, content_type: str | None) -> tuple[bytes, 
 
 def append_metadata(metadata: dict[str, object]) -> None:
     _, _, metadata_path = ingest_paths()
-    with metadata_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(metadata, sort_keys=True, separators=(",", ":")) + "\n")
+    with _metadata_lock:
+        with metadata_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(metadata, sort_keys=True, separators=(",", ":")) + "\n")
 
 
 def read_metadata(limit: int | None = None) -> list[dict[str, object]]:
