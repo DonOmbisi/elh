@@ -62,7 +62,11 @@ class RateLimiter:
                 return True
             return False
 
-_rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
+# Per-IP rate limiter (primary protection)
+_per_ip_limiter = RateLimiter(max_requests=600, window_seconds=60)
+
+# Global circuit-breaker rate limiter (backup protection)
+_global_limiter = RateLimiter(max_requests=3000, window_seconds=60)
 
 app = FastAPI(
     title="ELH Compression API",
@@ -87,8 +91,14 @@ async def rate_limit_middleware(request: Request, call_next):
         return await call_next(request)
     
     client_id = request.client.host if request.client else "unknown"
-    if not _rate_limiter.is_allowed(client_id):
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Maximum 100 requests per minute.")
+    
+    # Primary protection: per-IP rate limiting
+    if not _per_ip_limiter.is_allowed(client_id):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Maximum 600 requests per minute per IP.")
+    
+    # Backup protection: global circuit-breaker rate limiting
+    if not _global_limiter.is_allowed("global"):
+        raise HTTPException(status_code=429, detail="Global rate limit exceeded. Maximum 3000 requests per minute.")
     
     return await call_next(request)
 

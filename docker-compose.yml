@@ -1,0 +1,15 @@
+# docker-compose.yml
+services:
+  elh-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - elh_ingest_data:/app/data/ingest
+    restart: unless-stopped
+
+volumes:
+  elh_ingest_data:

@@ -6,8 +6,16 @@ from fastapi.testclient import TestClient
 
 import app as app_module
 
-
+# Get API key from environment if configured
+API_KEY = app_module.API_KEY
 client = TestClient(app_module.app)
+
+def with_api_key(headers=None):
+    """Add API key to headers if configured"""
+    if API_KEY:
+        headers = headers or {}
+        headers["X-API-Key"] = API_KEY
+    return headers
 
 
 class ApiTests(unittest.TestCase):
@@ -30,6 +38,7 @@ class ApiTests(unittest.TestCase):
         compressed = client.post(
             "/compress?bucket_k=4&overflow=1&chunk=4096",
             content=data,
+            headers=with_api_key(),
         )
         self.assertEqual(compressed.status_code, 200)
         self.assertTrue(
@@ -37,7 +46,7 @@ class ApiTests(unittest.TestCase):
         )
         self.assertEqual(int(compressed.headers["x-original-size"]), len(data))
 
-        restored = client.post("/decompress", content=compressed.content)
+        restored = client.post("/decompress", content=compressed.content, headers=with_api_key())
         self.assertEqual(restored.status_code, 200)
         self.assertEqual(restored.content, data)
 
@@ -49,6 +58,7 @@ class ApiTests(unittest.TestCase):
         response = client.post(
             "/benchmark?bucket_k=4&overflow=1&chunk=4096&batch=2048",
             content=data,
+            headers=with_api_key(),
         )
         self.assertEqual(response.status_code, 200)
         report = response.json()
@@ -72,6 +82,7 @@ class ApiTests(unittest.TestCase):
         response = client.post(
             "/benchmark/sweep?buckets=1,4&overflows=0,1&batches=2048,4096&chunk=4096",
             content=data,
+            headers=with_api_key(),
         )
         self.assertEqual(response.status_code, 200)
         report = response.json()
@@ -94,6 +105,7 @@ class ApiTests(unittest.TestCase):
                 created = client.post(
                     "/ingest/batch?event_type=autovest.audit&source=test",
                     json=events,
+                    headers=with_api_key(),
                 )
                 self.assertEqual(created.status_code, 200)
                 metadata = created.json()
@@ -101,11 +113,11 @@ class ApiTests(unittest.TestCase):
                 self.assertTrue(metadata["verified"])
                 self.assertGreater(metadata["compressed_bytes"], 0)
 
-                listed = client.get("/ingest/batches")
+                listed = client.get("/ingest/batches", headers=with_api_key())
                 self.assertEqual(listed.status_code, 200)
                 self.assertEqual(listed.json()["count"], 1)
 
-                replay = client.get(f"/ingest/batches/{metadata['batch_id']}/decompress")
+                replay = client.get(f"/ingest/batches/{metadata['batch_id']}/decompress", headers=with_api_key())
                 self.assertEqual(replay.status_code, 200)
                 self.assertEqual(replay.headers["x-verified"], "true")
                 self.assertIn(b'"event":"trade_intent"', replay.content)
@@ -117,20 +129,20 @@ class ApiTests(unittest.TestCase):
         try:
             with TemporaryDirectory() as tmp:
                 app_module.INGEST_DIR = Path(tmp)
-                response = client.post("/ingest/event", json=[{"a": 1}, {"a": 2}])
+                response = client.post("/ingest/event", json=[{"a": 1}, {"a": 2}], headers=with_api_key())
                 self.assertEqual(response.status_code, 400)
         finally:
             app_module.INGEST_DIR = old_dir
 
     def test_invalid_frame_rejected(self):
-        response = client.post("/decompress", content=b"not an elh frame")
+        response = client.post("/decompress", content=b"not an elh frame", headers=with_api_key())
         self.assertEqual(response.status_code, 400)
 
     def test_request_limit(self):
         old_limit = app_module.MAX_REQUEST_BYTES
         try:
             app_module.MAX_REQUEST_BYTES = 8
-            response = client.post("/compress", content=b"0123456789")
+            response = client.post("/compress", content=b"0123456789", headers=with_api_key())
             self.assertEqual(response.status_code, 413)
         finally:
             app_module.MAX_REQUEST_BYTES = old_limit
@@ -153,6 +165,13 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(health.status_code, 200)
         finally:
             app_module.API_KEY = old_key
+
+    def test_rate_limiting_present(self):
+        # Verify that rate limiting is configured
+        self.assertIsNotNone(app_module._per_ip_limiter)
+        self.assertIsNotNone(app_module._global_limiter)
+        self.assertEqual(app_module._per_ip_limiter.max_requests, 600)
+        self.assertEqual(app_module._global_limiter.max_requests, 3000)
 
 
 if __name__ == "__main__":

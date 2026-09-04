@@ -12,3 +12,4 @@ __pycache__/
 *.gz
 elh_test_results/
 Bizna-AutoVest-Build54/
+.env
