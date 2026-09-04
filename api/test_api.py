@@ -1,4 +1,5 @@
 import unittest
+import base64
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -172,6 +173,101 @@ class ApiTests(unittest.TestCase):
         self.assertIsNotNone(app_module._global_limiter)
         self.assertEqual(app_module._per_ip_limiter.max_requests, 600)
         self.assertEqual(app_module._global_limiter.max_requests, 3000)
+
+    def test_compress_json_endpoint(self):
+        data = b'{"service":"api","message":"hello elastic hashing"}\n' * 100
+        encoded_data = base64.b64encode(data).decode("utf-8")
+        
+        request_json = {
+            "data": encoded_data,
+            "bucket_k": 4,
+            "overflow": 1,
+            "chunk": 4096
+        }
+        
+        response = client.post("/compress.json", json=request_json, headers=with_api_key())
+        self.assertEqual(response.status_code, 200)
+        
+        result = response.json()
+        self.assertIn("compressed", result)
+        self.assertIn("original_size", result)
+        self.assertIn("compressed_size", result)
+        self.assertIn("ratio_percent", result)
+        self.assertEqual(result["original_size"], len(data))
+        self.assertGreater(result["compressed_size"], 0)
+        
+        # Verify the compressed data can be decoded
+        compressed = base64.b64decode(result["compressed"])
+        self.assertGreater(len(compressed), 0)
+
+    def test_decompress_json_endpoint(self):
+        data = b'{"service":"api","message":"hello elastic hashing"}\n' * 100
+        encoded_data = base64.b64encode(data).decode("utf-8")
+        
+        # First compress
+        compress_request = {
+            "data": encoded_data,
+            "bucket_k": 4,
+            "overflow": 1,
+            "chunk": 4096
+        }
+        
+        compress_response = client.post("/compress.json", json=compress_request, headers=with_api_key())
+        self.assertEqual(compress_response.status_code, 200)
+        compressed_result = compress_response.json()
+        
+        # Then decompress
+        decompress_request = {
+            "data": compressed_result["compressed"]
+        }
+        
+        decompress_response = client.post("/decompress.json", json=decompress_request, headers=with_api_key())
+        self.assertEqual(decompress_response.status_code, 200)
+        
+        decompress_result = decompress_response.json()
+        self.assertIn("decompressed", decompress_result)
+        self.assertIn("original_size", decompress_result)
+        self.assertIn("compressed_size", decompress_result)
+        
+        # Verify round-trip
+        restored = base64.b64decode(decompress_result["decompressed"])
+        self.assertEqual(restored, data)
+        self.assertEqual(decompress_result["original_size"], len(data))
+
+    def test_compress_json_defaults(self):
+        data = b'{"service":"api","message":"hello"}\n'
+        encoded_data = base64.b64encode(data).decode("utf-8")
+        
+        # Test with minimal required fields (use defaults)
+        request_json = {"data": encoded_data}
+        
+        response = client.post("/compress.json", json=request_json, headers=with_api_key())
+        self.assertEqual(response.status_code, 200)
+        
+        result = response.json()
+        self.assertIn("compressed", result)
+        self.assertEqual(result["original_size"], len(data))
+
+    def test_compress_json_invalid_base64(self):
+        request_json = {"data": "not-valid-base64!!"}
+        
+        response = client.post("/compress.json", json=request_json, headers=with_api_key())
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("base64", response.json()["detail"].lower())
+
+    def test_compress_json_missing_data_field(self):
+        request_json = {"bucket_k": 4}
+        
+        response = client.post("/compress.json", json=request_json, headers=with_api_key())
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("data", response.json()["detail"].lower())
+
+    def test_decompress_json_invalid_base64(self):
+        request_json = {"data": "not-valid-base64!!"}
+        
+        response = client.post("/decompress.json", json=request_json, headers=with_api_key())
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("base64", response.json()["detail"].lower())
 
 
 if __name__ == "__main__":

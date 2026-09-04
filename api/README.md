@@ -12,7 +12,9 @@ GET  /version
 POST /benchmark
 POST /benchmark/sweep
 POST /compress
+POST /compress.json
 POST /decompress
+POST /decompress.json
 POST /ingest/event
 POST /ingest/batch
 GET  /ingest/batches
@@ -57,6 +59,64 @@ curl -X POST --data-binary @input.log \
 curl -X POST --data-binary @input.elh \
   http://localhost:8000/decompress \
   -o restored.log
+```
+
+`/compress.json` accepts a JSON request with base64-encoded data and returns a JSON response with base64-encoded compressed data:
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: change-me" \
+  -d '{"data":"SGVsbG8gV29ybGQ=","bucket_k":4,"overflow":1,"chunk":4096}' \
+  http://localhost:8000/compress.json
+```
+
+Request body (JSON):
+```json
+{
+  "data": "<base64-encoded input>",
+  "bucket_k": 4,
+  "overflow": 1,
+  "chunk": 4096
+}
+```
+
+Response body (JSON):
+```json
+{
+  "compressed": "<base64-encoded frame>",
+  "original_size": 1234,
+  "compressed_size": 567,
+  "ratio_percent": 45.9
+}
+```
+
+All parameters except `data` are optional. Defaults: `bucket_k=4`, `overflow=1`, `chunk=65536`.
+
+`/decompress.json` accepts a JSON request with base64-encoded ELH frame and returns a JSON response with base64-encoded decompressed data:
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: change-me" \
+  -d '{"data":"<base64-encoded-frame>"}' \
+  http://localhost:8000/decompress.json
+```
+
+Request body (JSON):
+```json
+{
+  "data": "<base64-encoded frame>"
+}
+```
+
+Response body (JSON):
+```json
+{
+  "decompressed": "<base64-encoded original>",
+  "original_size": 1234,
+  "compressed_size": 567
+}
 ```
 
 ## Local Run

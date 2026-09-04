@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
@@ -753,3 +754,76 @@ async def decompress(request: Request, _: None = Security(require_api_key)) -> R
             "X-Compressed-Size": str(len(frame)),
         },
     )
+
+
+@app.post("/compress.json")
+async def compress_json(request: Request, _: None = Security(require_api_key)) -> dict[str, object]:
+    body = await read_limited_body(request)
+    try:
+        request_json = json.loads(body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid JSON request body") from exc
+
+    # Validate and extract required field
+    if "data" not in request_json:
+        raise HTTPException(status_code=400, detail="Missing required field: data")
+    
+    try:
+        data = base64.b64decode(request_json["data"])
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid base64 encoding in data field") from exc
+
+    # Extract optional parameters with defaults
+    bucket_k = parse_int_query(request_json.get("bucket_k"), 4, "bucket_k")
+    use_overflow = parse_int_query(request_json.get("overflow"), 1, "overflow")
+    chunk_size = positive_int(
+        parse_int_query(request_json.get("chunk"), DEFAULT_CHUNK_SIZE, "chunk"),
+        "chunk",
+    )
+
+    try:
+        frame = elh.compress(
+            data,
+            bucket_k=bucket_k,
+            use_overflow=use_overflow,
+            acceleration=1,
+            chunk_size=chunk_size,
+        )
+    except (elh.Error, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "compressed": base64.b64encode(frame).decode("utf-8"),
+        "original_size": len(data),
+        "compressed_size": len(frame),
+        "ratio_percent": ratio_percent(len(frame), len(data)),
+    }
+
+
+@app.post("/decompress.json")
+async def decompress_json(request: Request, _: None = Security(require_api_key)) -> dict[str, object]:
+    body = await read_limited_body(request)
+    try:
+        request_json = json.loads(body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid JSON request body") from exc
+
+    # Validate and extract required field
+    if "data" not in request_json:
+        raise HTTPException(status_code=400, detail="Missing required field: data")
+    
+    try:
+        frame = base64.b64decode(request_json["data"])
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid base64 encoding in data field") from exc
+
+    try:
+        data = elh.decompress(frame)
+    except elh.Error as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "decompressed": base64.b64encode(data).decode("utf-8"),
+        "original_size": len(data),
+        "compressed_size": len(frame),
+    }
